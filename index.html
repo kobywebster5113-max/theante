@@ -1,0 +1,4158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Ante</title>
+  <style>
+    :root {
+      --bg: #070816;
+      --panel: rgba(18, 22, 48, 0.86);
+      --text: #f4f7ff;
+      --muted: #9da8c7;
+      --accent: #6df7ff;
+      --accent-2: #9d6dff;
+      --good: #51ff9a;
+      --warn: #ffd166;
+      --bad: #ff5c8a;
+      --shadow: 0 18px 55px rgba(0, 0, 0, 0.42);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(109, 247, 255, 0.16), transparent 28%),
+        radial-gradient(circle at 85% 15%, rgba(157, 109, 255, 0.18), transparent 30%),
+        radial-gradient(circle at 50% 95%, rgba(81, 255, 154, 0.09), transparent 35%),
+        var(--bg);
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.024) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: linear-gradient(to bottom, black, transparent 86%);
+    }
+    .app {
+      width: min(1320px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 18px 0 32px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 24px rgba(109, 247, 255, 0.35);
+      font-size: 24px;
+    }
+    h1, h2, h3, p { margin: 0; }
+    h1 {
+      font-size: clamp(1.45rem, 3vw, 2.65rem);
+      letter-spacing: -0.04em;
+      line-height: 0.95;
+    }
+    .subtitle { color: var(--muted); margin-top: 6px; font-size: 0.9rem; }
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 9px;
+      align-items: center;
+    }
+    .nav-select-wrap { position: relative; min-width: 170px; }
+    .nav-select-wrap::after {
+      content: "▾";
+      position: absolute;
+      right: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent);
+      pointer-events: none;
+      font-weight: 900;
+    }
+    #pageSelect {
+      appearance: none;
+      padding-right: 34px;
+      background: rgba(255,255,255,0.09);
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .stat-pill {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      padding: 9px 13px;
+      min-width: 122px;
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+    .label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 2px;
+    }
+    .value { font-size: 1.08rem; font-weight: 850; }
+    .page { display: none; }
+    .page.active { display: block; animation: pageIn 0.25s ease both; }
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .home-grid {
+      display: grid;
+      grid-template-columns: 240px minmax(420px, 1fr) 260px;
+      gap: 14px;
+      align-items: start;
+    }
+    .two-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    .leaderboard-three-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .mini-board {
+      background: rgba(0,0,0,0.16);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 18px;
+      padding: 12px;
+      overflow-x: auto;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+      overflow: hidden;
+    }
+    .card-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-head h2, .card-head h3 { font-size: 0.98rem; letter-spacing: -0.02em; }
+    .card-body { padding: 14px; }
+    .game-list { display: grid; gap: 9px; }
+    .game-tile {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      background: rgba(255,255,255,0.055);
+      border-radius: 15px;
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.18s, background 0.18s, border 0.18s;
+    }
+    .game-tile:hover, .game-tile.active {
+      transform: translateY(-2px);
+      background: linear-gradient(135deg, rgba(109,247,255,0.16), rgba(157,109,255,0.14));
+      border-color: rgba(109,247,255,0.45);
+    }
+    .game-tile strong { display: block; margin-bottom: 4px; }
+    .game-tile span { color: var(--muted); font-size: 0.8rem; }
+    .future { opacity: 0.45; cursor: not-allowed; }
+    .arena { padding: 14px; }
+    .game-topbar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 9px;
+      margin-bottom: 10px;
+    }
+    .mini-stat {
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 15px;
+      padding: 10px;
+    }
+    .mini-stat b { display: block; font-size: 1.05rem; margin-top: 3px; }
+    .board-action-row {
+      max-width: 500px;
+      margin: 10px auto 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .board-action-row button {
+      width: 100%;
+      padding: 13px;
+      font-size: 0.95rem;
+    }
+    .board-wrap {
+      position: relative;
+      max-width: 500px;
+      margin: 0 auto;
+      border-radius: 22px;
+      padding: 10px;
+      background: linear-gradient(135deg, rgba(109,247,255,0.3), rgba(157,109,255,0.25), rgba(81,255,154,0.18));
+      box-shadow: 0 0 42px rgba(109,247,255,0.14);
+    }
+    canvas {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: block;
+      border-radius: 17px;
+      background: #090d1f;
+    }
+    .overlay {
+      position: absolute;
+      inset: 10px;
+      border-radius: 17px;
+      background: rgba(4, 6, 18, 0.72);
+      backdrop-filter: blur(10px);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+    .overlay.hidden { display: none; }
+    .overlay h2 { font-size: clamp(1.55rem, 3.5vw, 2.6rem); margin-bottom: 8px; }
+    .overlay p { color: var(--muted); max-width: 520px; margin: 0 auto 16px; line-height: 1.5; }
+
+    .cash-pop {
+      position: absolute;
+      left: 50%;
+      top: 38%;
+      transform: translate(-50%, -50%);
+      z-index: 50;
+      min-width: 260px;
+      text-align: center;
+      padding: 18px 22px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(255, 209, 102, 0.98), rgba(81, 255, 154, 0.98));
+      color: #07101b;
+      font-weight: 950;
+      box-shadow: 0 20px 70px rgba(0,0,0,0.45), 0 0 35px rgba(81,255,154,0.4);
+      animation: cashPop 1.7s ease both;
+      pointer-events: none;
+    }
+
+    .cash-pop.hidden { display: none; }
+
+    .confetti-piece {
+      position: absolute;
+      z-index: 49;
+      left: 50%;
+      top: 38%;
+      width: 8px;
+      height: 14px;
+      border-radius: 3px;
+      pointer-events: none;
+      animation: confettiBurst 900ms ease-out forwards;
+    }
+
+    @keyframes cashPop {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.84); }
+      18% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+      78% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, calc(-50% - 18px)) scale(0.98); }
+    }
+
+    @keyframes confettiBurst {
+      0% { opacity: 1; transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(360deg) scale(0.7); }
+    }
+
+    .controls { display: grid; gap: 11px; }
+    .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .three-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    input, select {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.2);
+      color: var(--text);
+      border-radius: 13px;
+      padding: 11px;
+      outline: none;
+      font-size: 0.92rem;
+    }
+    input:focus, select:focus { border-color: rgba(109,247,255,0.65); }
+    button {
+      border: 0;
+      color: #07101b;
+      background: linear-gradient(135deg, var(--accent), var(--good));
+      border-radius: 13px;
+      padding: 11px 13px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.16s, filter 0.16s, opacity 0.16s;
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .secondary { color: var(--text); background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.13); }
+    .danger { color: white; background: linear-gradient(135deg, #ff5c8a, #ff8f5c); }
+    .cashout { background: linear-gradient(135deg, #ffd166, #51ff9a); }
+    .hint { color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+    .multiplier-track {
+      margin-top: 10px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .mult-chip {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 850;
+    }
+    .mult-chip.hit { color: #06101a; background: linear-gradient(135deg, var(--accent), var(--good)); }
+
+    .mines-board {
+      max-width: 500px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 10px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(109,247,255,0.3), rgba(157,109,255,0.25), rgba(81,255,154,0.18));
+      box-shadow: 0 0 42px rgba(109,247,255,0.14);
+    }
+
+    .mine-tile {
+      aspect-ratio: 1 / 1;
+      border-radius: 15px;
+      background: rgba(7, 16, 38, 0.88);
+      border: 1px solid rgba(255,255,255,0.13);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      font-size: clamp(1.1rem, 3vw, 1.9rem);
+      font-weight: 950;
+      cursor: pointer;
+      transition: transform 0.14s ease, filter 0.14s ease, background 0.14s ease;
+      user-select: none;
+    }
+
+    .mine-tile:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.16);
+      border-color: rgba(109,247,255,0.45);
+    }
+
+    .mine-tile.safe {
+      background: linear-gradient(135deg, rgba(81,255,154,0.9), rgba(109,247,255,0.8));
+      color: #07101b;
+      cursor: default;
+    }
+
+    .mine-tile.bomb {
+      background: linear-gradient(135deg, rgba(255,92,138,0.95), rgba(255,143,92,0.9));
+      color: white;
+      cursor: default;
+    }
+
+    .mine-tile.locked {
+      cursor: default;
+      opacity: 0.8;
+    }
+
+    .mines-hidden { display: none !important; }
+
+    .slots-machine {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(255,209,102,0.22), rgba(157,109,255,0.22), rgba(109,247,255,0.18));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 42px rgba(255,209,102,0.14);
+    }
+
+    .slots-reels {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .slot-reel {
+      aspect-ratio: 1 / 1;
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      font-size: clamp(2.5rem, 7vw, 5rem);
+      background: rgba(7, 16, 38, 0.92);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: inset 0 0 28px rgba(109,247,255,0.08);
+      user-select: none;
+    }
+
+    .slot-reel.flashing {
+      animation: reelPulse 260ms linear infinite;
+    }
+
+    @keyframes reelPulse {
+      0% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.025); filter: brightness(1.25); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+
+
+
+    .dice-game {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 20px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(109,247,255,0.18), rgba(81,255,154,0.14), rgba(157,109,255,0.18));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 42px rgba(109,247,255,0.12);
+      text-align: center;
+    }
+
+    .dice-slider-wrap {
+      position: relative;
+      padding: 22px 4px 10px;
+    }
+
+    .dice-slider-wrap input[type="range"] {
+      width: 100%;
+      accent-color: #51ff9a;
+    }
+
+    .dice-number {
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-weight: 950;
+      margin: 10px 0;
+      color: var(--text);
+      text-shadow: 0 0 28px rgba(109,247,255,0.35);
+    }
+
+    .dice-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-weight: 900;
+      margin-top: 4px;
+    }
+
+
+    .dice-track {
+      position: relative;
+      height: 18px;
+      border-radius: 999px;
+      overflow: visible;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: inset 0 0 22px rgba(0,0,0,0.35);
+      margin: 18px 8px 12px;
+    }
+
+    .dice-track-red,
+    .dice-track-green {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 8px;
+      border-radius: 999px;
+    }
+
+    .dice-track-red {
+      left: 0;
+      width: 50%;
+      background: linear-gradient(90deg, rgba(255,92,138,0.95), rgba(255,92,138,0.75));
+      box-shadow: 0 0 16px rgba(255,92,138,0.35);
+    }
+
+    .dice-track-green {
+      left: 50%;
+      width: 50%;
+      background: linear-gradient(90deg, rgba(81,255,154,0.75), rgba(81,255,154,0.95));
+      box-shadow: 0 0 16px rgba(81,255,154,0.35);
+    }
+
+    .dice-marker {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 36px;
+      border-radius: 999px;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(180deg, #ffffff, #ffd166);
+      border: 1px solid rgba(255,255,255,0.85);
+      box-shadow: 0 0 18px rgba(255,209,102,0.55);
+      transition: left 0.42s cubic-bezier(.2,.85,.2,1);
+      z-index: 4;
+    }
+
+    .dice-mode-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .dice-mode-row button.active {
+      background: linear-gradient(135deg, var(--accent), var(--good));
+      color: #07101b;
+    }
+
+
+
+    .safecracker-table {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(255,209,102,0.15), rgba(109,247,255,0.16), rgba(157,109,255,0.18));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 42px rgba(109,247,255,0.12);
+      text-align: center;
+    }
+
+    .safecracker-vault {
+      margin: 0 auto 14px;
+      width: min(220px, 60vw);
+      aspect-ratio: 1 / 1;
+      border-radius: 28px;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 50% 45%, rgba(255,209,102,0.22), rgba(7,16,38,0.95) 55%);
+      border: 2px solid rgba(255,255,255,0.12);
+      box-shadow: inset 0 0 38px rgba(0,0,0,0.45), 0 18px 48px rgba(0,0,0,0.26);
+      font-size: clamp(4rem, 12vw, 7rem);
+    }
+
+    .safecracker-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    
+    .safecracker-buttons.safe-count-6 {
+      grid-template-columns: repeat(4, minmax(64px, 1fr));
+      justify-content: center;
+    }
+
+    .safecracker-buttons.safe-count-6 .safe-code-btn:nth-child(5) {
+      grid-column: 2;
+    }
+
+    .safecracker-buttons.safe-count-6 .safe-code-btn:nth-child(6) {
+      grid-column: 3;
+    }
+
+    .safecracker-buttons.safe-count-3 {
+      grid-template-columns: repeat(3, minmax(64px, 1fr));
+      max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .safecracker-buttons.safe-count-4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .safe-code-btn {
+      min-height: 74px;
+      border-radius: 18px;
+      font-size: 1.45rem;
+      font-weight: 950;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.13);
+    }
+
+    .safe-code-btn.safe-good {
+      background: linear-gradient(135deg, rgba(81,255,154,0.95), rgba(109,247,255,0.78));
+      color: #07101b;
+    }
+
+    .safe-code-btn.safe-bad {
+      background: linear-gradient(135deg, rgba(255,92,138,0.96), rgba(255,143,92,0.82));
+      color: white;
+    }
+
+    .safe-round-pop {
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      transform: translate(-50%, -50%);
+      z-index: 30;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: rgba(8,16,36,0.94);
+      border: 1px solid rgba(255,255,255,0.14);
+      font-weight: 950;
+      font-size: 1.25rem;
+      box-shadow: 0 0 26px rgba(109,247,255,0.22);
+      animation: safeRoundFloat 1.05s ease forwards;
+      pointer-events: none;
+    }
+
+    @keyframes safeRoundFloat {
+      0% { opacity: 0; transform: translate(-50%, -18%) scale(.9); }
+      22% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -88%) scale(1.04); }
+    }
+
+    .twentyone-table {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(81,255,154,0.14), rgba(109,247,255,0.16), rgba(157,109,255,0.16));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 42px rgba(109,247,255,0.12);
+      text-align: center;
+    }
+
+    .twentyone-row {
+      margin-bottom: 16px;
+    }
+
+    .twentyone-hand {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-height: 112px;
+      align-items: center;
+    }
+
+    .twentyone-card {
+      width: 72px;
+      aspect-ratio: 3 / 4;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, rgba(255,255,255,0.97), rgba(210,232,255,0.92));
+      color: #07101b;
+      font-size: 1.8rem;
+      font-weight: 950;
+      box-shadow: 0 12px 34px rgba(0,0,0,0.28);
+      border: 2px solid rgba(255,255,255,0.85);
+      user-select: none;
+    }
+
+    .twentyone-card.red {
+      color: #d7263d;
+    }
+
+    .twentyone-card.hidden-card {
+      color: white;
+      background: linear-gradient(135deg, #111827, #9d6dff);
+    }
+
+    .twentyone-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .hilo-table {
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(255,92,138,0.18), rgba(109,247,255,0.2), rgba(81,255,154,0.16));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 42px rgba(109,247,255,0.12);
+      text-align: center;
+    }
+
+    .hilo-card {
+      width: min(220px, 58vw);
+      aspect-ratio: 3 / 4;
+      margin: 0 auto 14px;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, rgba(255,255,255,0.96), rgba(210,232,255,0.9));
+      color: #07101b;
+      font-size: clamp(3rem, 11vw, 6rem);
+      font-weight: 950;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      border: 3px solid rgba(255,255,255,0.8);
+      user-select: none;
+    }
+
+    .hilo-card.red { color: #d7263d; }
+
+    .hilo-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .hilo-result {
+      min-height: 24px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .slots-result {
+      min-height: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left; }
+    th { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .positive { color: var(--good); font-weight: 850; }
+    .negative { color: var(--bad); font-weight: 850; }
+    .log {
+      height: 210px;
+      overflow: auto;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 10px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    .mobile-pad {
+      display: none;
+      grid-template-columns: repeat(3, 56px);
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .mobile-pad button { height: 46px; padding: 0; }
+    .hero-card {
+      padding: 24px;
+      min-height: 190px;
+      display: grid;
+      gap: 12px;
+      align-content: center;
+    }
+    .hero-card h2 { font-size: clamp(1.6rem, 4vw, 3.4rem); letter-spacing: -0.05em; }
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .shop-item {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: grid;
+      gap: 10px;
+    }
+    .shop-item h3 { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .skin-preview {
+      height: 76px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--skin-a), var(--skin-b));
+      box-shadow: 0 0 26px color-mix(in srgb, var(--skin-a), transparent 70%);
+      display: grid;
+      place-items: center;
+      font-size: 2rem;
+    }
+    .pill {
+      display: inline-flex;
+      width: fit-content;
+      border-radius: 999px;
+      padding: 6px 9px;
+      background: rgba(255,255,255,0.08);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    .shop-mode-card {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 12px;
+      align-items: end;
+      max-width: 720px;
+    }
+    .account-box { display: grid; gap: 12px; max-width: 520px; }
+    .shake { animation: shake 0.35s ease both; }
+    .pulse-win { animation: pulseWin 0.7s ease both; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    @keyframes pulseWin {
+      0% { transform: scale(1); filter: brightness(1); }
+      45% { transform: scale(1.015); filter: brightness(1.25); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+    @media (max-width: 1120px) {
+      .home-grid { grid-template-columns: 220px 1fr; }
+      .right-col { grid-column: 1 / -1; }
+      .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 820px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .top-actions { justify-content: stretch; width: 100%; }
+      .stat-pill, .nav-select-wrap { flex: 1; min-width: 0; }
+      .home-grid, .two-grid, .leaderboard-three-grid, .shop-mode-card { grid-template-columns: 1fr; }
+      .three-row { grid-template-columns: 1fr; }
+      .game-topbar { grid-template-columns: 1fr 1fr; }
+      .mobile-pad { display: grid; }
+      .shop-grid { grid-template-columns: 1fr; }
+    }
+  
+    .site-footer {
+      max-width: 1200px;
+      margin: 18px auto 8px;
+      padding: 0 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: rgba(255,255,255,0.34);
+      font-size: 0.68rem;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+    }
+
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">🎮</div>
+        <div>
+          <h1>The Ante</h1>
+          
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="nav-select-wrap">
+          <select id="pageSelect" aria-label="Page menu">
+            <option value="home">Home</option>
+            <option value="leaderboard">Leaderboard</option>
+            <option value="shop">Shop</option>
+            <option value="account">Account</option>
+            <option value="rebirth">Rebirth</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button id="topRefreshBtn" class="secondary" style="border-radius:999px;">Refresh Game</button>
+        <div class="stat-pill"><span class="label">Player</span><span class="value" id="playerNameTop">Guest</span></div>
+        <div class="stat-pill"><span class="label">Balance</span><span class="value" id="balanceTop">$100</span></div>
+        <div class="stat-pill"><span class="label">Bonus</span><span class="value" id="bonusTop">1.0x</span></div>
+      </div>
+    </header>
+    <section id="homePage" class="page active">
+      <div class="home-grid">
+        <aside class="card">
+          <div class="card-head"><h2>Game Hub</h2><span class="label">v0.3</span></div>
+          <div class="card-body game-list">
+            <button class="game-tile active" data-game="snake"><strong>🐍 Snake</strong></button>
+            <button class="game-tile" data-game="mines"><strong>💣 Mines</strong></button>
+            <button class="game-tile" data-game="slots"><strong>🎰 Slots</strong></button>
+            <button class="game-tile" data-game="hilo"><strong>🃏 Hi-Lo</strong></button>
+            <button class="game-tile" data-game="dice"><strong>🎯 Dice</strong></button>
+            <button class="game-tile" data-game="twentyone"><strong>🃏 21</strong></button>
+            <button class="game-tile" data-game="safecracker"><strong>🔐 Safe Cracker</strong></button>
+            <button class="game-tile future" disabled><strong>Crash</strong></button>
+            <button class="game-tile future" disabled><strong>Roulette</strong></button>
+          </div>
+        </aside>
+        <section class="card arena" id="arenaCard">
+          <div class="game-topbar">
+            <div class="mini-stat"><span class="label">Bet</span><b id="betStat">$25</b></div>
+            <div class="mini-stat"><span class="label">Multiplier</span><b id="multStat">0.03x</b></div>
+            <div class="mini-stat"><span class="label">Potential</span><b id="potentialStat">$1</b></div>
+            <div class="mini-stat"><span class="label">Apples</span><b id="scoreStat">0</b></div>
+          </div>
+          <div class="board-wrap" id="boardWrap">
+            <canvas id="snakeCanvas" width="600" height="600" aria-label="Snake game board"></canvas>
+            <div class="overlay" id="overlay">
+              <div>
+                <h2 id="overlayTitle">Ready?</h2>
+                <p id="overlayText">Press Space to pause or resume. Cash out whenever you’re ready.</p>
+                <button id="overlayStart">Start Run</button>
+              </div>
+            </div>
+            <div class="cash-pop hidden" id="cashPop"></div>
+          </div>
+          <div class="board-action-row">
+            <button id="boardStartBtn">Start Run</button>
+            <button id="boardCashoutBtn" class="cashout" disabled>Cash Out</button>
+          </div>
+          <div class="mobile-pad" aria-label="Mobile controls">
+            <span></span><button class="secondary" data-dir="up">▲</button><span></span>
+            <button class="secondary" data-dir="left">◀</button><button class="secondary" data-dir="down">▼</button><button class="secondary" data-dir="right">▶</button>
+          </div>
+          <div class="multiplier-track" id="multiplierTrack"></div>
+        </section>
+
+        <section class="card arena mines-hidden" id="minesArenaCard">
+          <div class="game-topbar">
+            <div class="mini-stat"><span class="label">Bet</span><b id="minesBetStat">$25</b></div>
+            <div class="mini-stat"><span class="label">Mode</span><b id="minesModeStat">Easy</b></div>
+            <div class="mini-stat"><span class="label">Multiplier</span><b id="minesMultStat">1.00x</b></div>
+            <div class="mini-stat"><span class="label">Safe Picks</span><b id="minesSafeStat">0</b></div>
+          </div>
+          <div style="position:relative;"><div class="mines-board" id="minesBoard" aria-label="Mines game board"></div><div class="cash-pop hidden" id="minesCashPop"></div></div>
+          <div class="board-action-row">
+            <button id="minesStartBtn">Start Mines</button>
+            <button id="minesCashoutBtn" class="cashout" disabled>Cash Out</button>
+          </div>
+          <div class="multiplier-track" id="minesMultiplierTrack"></div>
+        </section>
+
+        <section class="card arena mines-hidden" id="slotsArenaCard">
+          <div class="game-topbar">
+            <div class="mini-stat"><span class="label">Bet</span><b id="slotsBetStat">$25</b></div>
+            <div class="mini-stat"><span class="label">Mode</span><b id="slotsModeStat">Normal</b></div>
+            <div class="mini-stat"><span class="label">Result</span><b id="slotsResultStat">Ready</b></div>
+            <div class="mini-stat"><span class="label">Potential</span><b id="slotsPotentialStat">$0</b></div>
+          </div>
+
+          <div style="position:relative;">
+            <div class="slots-machine">
+              <div class="slots-reels">
+                <div class="slot-reel" id="slotReel0">🍒</div>
+                <div class="slot-reel" id="slotReel1">🍋</div>
+                <div class="slot-reel" id="slotReel2">💎</div>
+              </div>
+              <div class="slots-result" id="slotsResultText">Press Start Slots, then Stop.</div>
+            </div>
+            <div class="cash-pop hidden" id="slotsCashPop"></div>
+          </div>
+
+          <div class="board-action-row">
+            <button id="slotsStartBtn">Start Slots</button>
+            <button id="slotsStopBtn" class="cashout" disabled>Stop</button>
+          </div>
+          <div class="multiplier-track" id="slotsMultiplierTrack"></div>
+        </section>
+
+        <section class="card arena mines-hidden" id="hiloArenaCard">
+          <div class="game-topbar">
+            <div class="mini-stat"><span class="label">Bet</span><b id="hiloBetStat">$25</b></div>
+            <div class="mini-stat"><span class="label">Streak</span><b id="hiloStreakStat">0</b></div>
+            <div class="mini-stat"><span class="label">Multiplier</span><b id="hiloMultStat">1.00x</b></div>
+            <div class="mini-stat"><span class="label">Potential</span><b id="hiloPotentialStat">$0</b></div>
+          </div>
+
+          <div style="position:relative;">
+            <div class="hilo-table">
+              <div class="hilo-card" id="hiloCard">A♠</div>
+              <div class="hilo-result" id="hiloResultText">Start a run, then guess Higher or Lower.</div>
+              <div class="hilo-actions">
+                <button id="hiloHigherBtn" class="secondary" disabled>Higher ▲</button>
+                <button id="hiloLowerBtn" class="secondary" disabled>Lower ▼</button>
+              </div>
+            </div>
+            <div class="cash-pop hidden" id="hiloCashPop"></div>
+          </div>
+
+          <div class="board-action-row">
+            <button id="hiloStartBtn">Start Hi-Lo</button>
+            <button id="hiloCashoutBtn" class="cashout" disabled>Cash Out</button>
+          </div>
+          <div class="multiplier-track" id="hiloMultiplierTrack"></div>
+        </section>
+
+        <section class="card arena mines-hidden" id="diceArenaCard">
+          <div class="game-topbar">
+            <div class="mini-stat"><span class="label">Bet</span><b id="diceBetStat">$25</b></div>
+            <div class="mini-stat"><span class="label">Chance</span><b id="diceChanceStat">50%</b></div>
+            <div class="mini-stat"><span class="label">Multiplier</span><b id="diceMultStat">1.00x</b></div>
+            <div class="mini-stat"><span class="label">Potential</span><b id="dicePotentialStat">$25</b></div>
+          </div>
+
+          <div style="position:relative;">
+            <div class="dice-game">
+              <div class="dice-number" id="diceRollNumber">-</div>
+              <div class="dice-slider-wrap">
+                <div class="dice-track">
+                  <div class="dice-track-red"></div>
+                  <div class="dice-track-green"></div>
+                  <div class="dice-marker" id="diceMarker"></div>
+                </div>
+                <div class="dice-bar-labels"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
+              </div>
+              <div class="dice-mode-row" style="grid-template-columns:repeat(2,1fr);">
+                <button id="diceUnderBtn" class="secondary active">Under</button>
+                <button id="diceOverBtn" class="secondary">Over</button>
+              </div>
+              <p class="hilo-result" id="diceResultText">Choose Under or Over, then roll.</p>
+            </div>
+            <div class="cash-pop hidden" id="diceCashPop"></div>
+          </div>
+
+          <div class="board-action-row">
+            <button id="diceRollBtn">Roll Dice</button>
+          </div>
+          <div class="multiplier-track" id="diceMultiplierTrack"></div>
+        </section>
+
+        <section class="card arena mines-hidden" id="twentyoneArenaCard">
+          <div class="game-topbar">
+            <div class="mini-stat"><span class="label">Bet</span><b id="twentyoneBetStat">$25</b></div>
+            <div class="mini-stat"><span class="label">Player</span><b id="twentyonePlayerStat">0</b></div>
+            <div class="mini-stat"><span class="label">Dealer</span><b id="twentyoneDealerStat">0</b></div>
+            <div class="mini-stat"><span class="label">Payout</span><b id="twentyonePayoutStat">2.00x</b></div>
+          </div>
+
+          <div style="position:relative;">
+            <div class="twentyone-table">
+              <div class="twentyone-row">
+                <h3>Dealer</h3>
+                <div class="twentyone-hand" id="dealerHand"></div>
+              </div>
+              <div class="twentyone-row">
+                <h3>You</h3>
+                <div class="twentyone-hand" id="playerHand21"></div>
+              </div>
+              <p class="hilo-result" id="twentyoneResultText">Start a hand. Get closer to 21 than the dealer.</p>
+              <div class="twentyone-actions">
+                <button id="twentyoneHitBtn" class="secondary" disabled>Hit Me</button>
+                <button id="twentyoneStandBtn" class="secondary" disabled>Stand</button>
+              </div>
+            </div>
+            <div class="cash-pop hidden" id="twentyoneCashPop"></div>
+          </div>
+
+          <div class="board-action-row">
+            <button id="twentyoneStartBtn">Start 21</button>
+          </div>
+        </section>
+
+        <section class="card arena mines-hidden" id="safecrackerArenaCard">
+          <div class="game-topbar">
+            <div class="mini-stat"><span class="label">Bet</span><b id="safeBetStat">$25</b></div>
+            <div class="mini-stat"><span class="label">Mode</span><b id="safeModeStat">Medium</b></div>
+            <div class="mini-stat"><span class="label">Round</span><b id="safeRoundStat">0</b></div>
+            <div class="mini-stat"><span class="label">Multiplier</span><b id="safeMultStat">1.00x</b></div>
+          </div>
+
+          <div style="position:relative;">
+            <div class="safecracker-table">
+              <div class="safecracker-vault" id="safeVault">🔐</div>
+              <p class="hilo-result" id="safeResultText">Start a run, then pick the safe code.</p>
+              <div class="safecracker-buttons" id="safeButtons"></div>
+            </div>
+            <div class="cash-pop hidden" id="safeCashPop"></div>
+          </div>
+
+          <div class="board-action-row">
+            <button id="safeStartBtn">Start Safe Cracker</button>
+            <button id="safeCashoutBtn" class="cashout" disabled>Cash Out</button>
+          </div>
+          <div class="multiplier-track" id="safeMultiplierTrack"></div>
+        </section>
+
+        <aside class="right-col">
+          <section class="card">
+            <div class="card-head"><h2>Run Panel</h2><span class="label">WASD / Arrows</span></div>
+            <div class="card-body controls">
+              <label><span class="label">Bet Amount</span><input id="betInput" type="number" min="1" step="1" value="25" /></label>
+              <input type="hidden" id="riskMode" value="easy" />
+              <button id="startBtn">Start Run</button>
+              <button id="cashoutBtn" class="cashout" disabled>Cash Out</button>
+              <button id="pauseBtn" class="secondary" disabled>Pause</button>
+
+              <div id="minesControlBox" class="mines-hidden" style="display:flex;flex-direction:column;gap:12px;">
+                <label><span class="label">Bet Amount</span><input id="minesBetInput" type="number" min="1" step="1" value="25" /></label>
+                <label>
+                  <span class="label">Mines Mode</span>
+                  <select id="minesMode">
+                    <option value="easy">Easy - 1 Bomb</option>
+                    <option value="medium" selected>Medium - 2 Bombs</option>
+                    <option value="hard">Hard - 3 Bombs</option>
+                  </select>
+                </label>
+                <button id="minesSideStartBtn">Start Mines</button>
+                <button id="minesSideCashoutBtn" class="cashout" disabled>Cash Out</button>
+              </div>
+
+              <div id="slotsControlBox" class="mines-hidden" style="display:flex;flex-direction:column;gap:12px;">
+                <label><span class="label">Bet Amount</span><input id="slotsBetInput" type="number" min="1" step="1" value="25" /></label>
+                <label>
+                  <span class="label">Slots Mode</span>
+                  <select id="slotsMode">
+                    <option value="easy">Easy</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </label>
+                <button id="slotsSideStartBtn">Start Slots</button>
+                <button id="slotsSideStopBtn" class="cashout" disabled>Stop</button>
+              </div>
+
+              <div id="hiloControlBox" class="mines-hidden" style="display:flex;flex-direction:column;gap:12px;">
+                <label><span class="label">Bet Amount</span><input id="hiloBetInput" type="number" min="1" step="1" value="25" /></label>
+                <button id="hiloSideStartBtn">Start Hi-Lo</button>
+                <button id="hiloSideCashoutBtn" class="cashout" disabled>Cash Out</button>
+              </div>
+
+              <div id="diceControlBox" class="mines-hidden" style="display:flex;flex-direction:column;gap:12px;">
+                <label><span class="label">Bet Amount</span><input id="diceBetInput" type="number" min="1" step="1" value="25" /></label>
+                <button id="diceSideRollBtn">Roll Dice</button>
+              </div>
+
+              <div id="twentyoneControlBox" class="mines-hidden" style="display:flex;flex-direction:column;gap:12px;">
+                <label><span class="label">Bet Amount</span><input id="twentyoneBetInput" type="number" min="1" step="1" value="25" /></label>
+                <button id="twentyoneSideStartBtn">Start 21</button>
+              </div>
+
+              <div id="safeControlBox" class="mines-hidden" style="display:flex;flex-direction:column;gap:12px;">
+                <label><span class="label">Bet Amount</span><input id="safeBetInput" type="number" min="1" step="1" value="25" /></label>
+                <label>
+                  <span class="label">Safe Mode</span>
+                  <select id="safeMode">
+                    <option value="easy">Easy - 1 in 6</option>
+                    <option value="medium" selected>Medium - 1 in 4</option>
+                    <option value="hard">Hard - 1 in 3</option>
+                  </select>
+                </label>
+                <button id="safeSideStartBtn">Start Safe Cracker</button>
+                <button id="safeSideCashoutBtn" class="cashout" disabled>Cash Out</button>
+              </div>
+
+
+
+
+
+
+            </div>
+          </section>
+        </aside>
+      </div>
+    </section>
+    <section id="leaderboardPage" class="page">
+      <section class="card">
+        <div class="card-head">
+          <h2>Leaderboards</h2>
+          <button id="refreshLeaderboardBtn" class="secondary">Refresh Leaderboards</button>
+        </div>
+        <div class="card-body">
+          <div class="leaderboard-three-grid">
+            <section class="mini-board">
+              <div class="card-head" style="padding:10px 0;border-bottom:0;"><h3>Richest Players</h3><span class="label">Top 5 Overall Cash</span></div>
+              <table>
+                <thead><tr><th>#</th><th>Player</th><th>Cash</th></tr></thead>
+                <tbody id="cashLeaderboardBody"></tbody>
+              </table>
+            </section>
+            <section class="mini-board">
+              <div class="card-head" style="padding:10px 0;border-bottom:0;"><h3>Rebirth Kings</h3><span class="label">Overall Rebirths</span></div>
+              <table>
+                <thead><tr><th>#</th><th>Player</th><th>Rebirths</th><th>Bonus</th></tr></thead>
+                <tbody id="rebirthLeaderboardBody"></tbody>
+              </table>
+            </section>
+            <section class="mini-board">
+              <div class="card-head" style="padding:10px 0;border-bottom:0;"><h3>Biggest Runs</h3><span class="label">Best Single Run</span></div>
+              <table>
+                <thead><tr><th>#</th><th>Player</th><th>Won</th></tr></thead>
+                <tbody id="runLeaderboardBody"></tbody>
+              </table>
+            </section>
+          </div>
+        </div>
+      </section>
+    </section>
+    <section id="shopPage" class="page">
+      <section class="card">
+        <div class="card-head"><h2>Shop</h2><span class="label">Cosmetics and unlocks</span></div>
+        <div class="card-body controls">
+          <div class="shop-mode-card">
+            <input type="hidden" id="shopAreaSelect" value="overall" />
+            <div class="three-row">
+              <button class="secondary shop-tab" data-shop-tab="visual">Visuals</button>
+              <button class="secondary shop-tab" data-shop-tab="gameplay">Game Items</button>
+              <button class="secondary shop-tab" data-shop-tab="leaderboard" id="leaderboardShopTab">Leaderboard</button>
+            </div>
+          </div>
+          <p class="hint" id="shopHelp">Shop items affect your account everywhere.</p>
+          <div class="shop-grid" id="shopGrid"></div>
+        </div>
+      </section>
+    </section>
+    <section id="accountPage" class="page">
+      <section class="card hero-card">
+        <span class="pill" id="accountPill">Signed out</span>
+        <h2>Account</h2>
+        <p class="hint">Create an account or log in. Your balance, rebirths, shop items, and username save online.</p>
+        <div class="two-grid">
+          <div class="account-box">
+            <h3>Create Account</h3>
+            <label><span class="label">Username</span><input id="signupUsername" maxlength="18" placeholder="Webster" /></label>
+            <label><span class="label">Email</span><input id="signupEmail" type="email" placeholder="you@example.com" /></label>
+            <label><span class="label">Password</span><input id="signupPassword" type="password" placeholder="Password" /></label>
+            <label><span class="label">Confirm Password</span><input id="signupConfirm" type="password" placeholder="Confirm password" /></label>
+            <button id="createAccountBtn">Create Account</button>
+          </div>
+          <div class="account-box">
+            <h3>Log In</h3>
+            <label><span class="label">Email</span><input id="loginEmail" type="email" placeholder="you@example.com" /></label>
+            <label><span class="label">Password</span><input id="loginPassword" type="password" placeholder="Password" /></label>
+            <div class="control-row">
+              <button id="loginBtn">Log In</button>
+              <button id="signOutBtn" class="secondary">Sign Out</button>
+            </div>
+            <p class="hint" id="accountStatus">Status: loading Firebase...</p>
+          </div>
+        </div>
+      </section>
+    </section>
+    <section id="rebirthPage" class="page">
+      <section class="card hero-card">
+        <span class="pill">Permanent progression</span>
+        <h2>Rebirth</h2>
+        <p class="hint">Rebirthing resets your balance back to $100 but gives a permanent earning bonus. First rebirth requires $25,000 and gives a 1.5x bonus.</p>
+        <div class="two-grid">
+          <div class="mini-stat"><span class="label">Current Rebirths</span><b id="rebirthCount">0</b></div>
+          <div class="mini-stat"><span class="label">Current Bonus</span><b id="rebirthBonus">1.0x</b></div>
+          <div class="mini-stat"><span class="label">Next Cost</span><b id="rebirthCost">$10,000</b></div>
+          <div class="mini-stat"><span class="label">After Rebirth</span><b id="rebirthNextBonus">1.5x</b></div>
+        </div>
+        <button id="rebirthBtn">Rebirth</button>
+      </section>
+    </section>
+    <section id="adminPage" class="page">
+      <div class="two-grid">
+        <section class="card" id="adminGateCard">
+          <div class="card-head"><h2>Admin Access</h2><span class="label">Email Locked</span></div>
+          <div class="card-body controls" id="adminGate">
+            <p class="hint">Log in with the approved admin email to unlock dev tools.</p>
+            <p class="hint"><b>Admin email:</b> ? </p>
+          </div>
+        </section>
+
+        <section class="card" id="adminPanelCard" style="display:none;">
+          <div class="card-head"><h2>Admin Panel</h2><span class="label">Unlocked</span></div>
+          <div class="card-body controls">
+            <button id="refreshUsersBtn" class="secondary">Refresh Users</button>
+
+            <label>
+              <span class="label">Choose User</span>
+              <select id="adminUserSelect">
+                <option value="">No users loaded</option>
+              </select>
+            </label>
+
+            <div class="control-row">
+              <button id="adminAdd500Btn" class="secondary">Add $500</button>
+              <button id="adminAdd10000Btn" class="secondary">Add $10,000</button>
+            </div>
+
+            <div class="control-row">
+              <button id="adminSet10000Btn" class="secondary">Set $10,000</button>
+              <button id="adminResetPickedBtn" class="danger">Reset Selected User</button>
+            </div>
+
+            <label>
+              <span class="label">Custom Amount</span>
+              <input id="adminCustomAmount" type="number" min="0" step="1" value="1000" />
+            </label>
+
+            <div class="control-row">
+              <button id="adminAddCustomBtn" class="secondary">Add Custom</button>
+              <button id="adminSetCustomBtn" class="secondary">Set Custom</button>
+            </div>
+
+            <hr style="border-color:rgba(255,255,255,0.1);width:100%;">
+
+            <div class="control-row">
+              <button id="adminAddEveryoneBtn" class="secondary">Add $500 To Everyone</button>
+              <button id="adminWipeAllBtn" class="danger">Wipe All Users</button>
+            </div>
+
+            <p class="hint">Admin is unlocked by Firebase email. For real security, Firestore rules must also restrict admin writes to this email.</p>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged,
+      updateProfile
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      collection,
+      addDoc,
+      query,
+      orderBy,
+      limit,
+      getDocs,
+      getDocsFromServer,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyDAs2gANfwrJpMOeFRf3RP35dtqEfv7RT4",
+      authDomain: "gambleco-22b52.firebaseapp.com",
+      projectId: "gambleco-22b52",
+      storageBucket: "gambleco-22b52.firebasestorage.app",
+      messagingSenderId: "372207229265",
+      appId: "1:372207229265:web:eb66a2b3e6153fe5505b70",
+      measurementId: "G-QMYWBJ8JMY"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const LOCAL_KEY = "webstersGameLocalBackup_v3";
+
+    const ADMIN_EMAILS = [
+      "koby.webster5113@gmail.com"
+    ];
+
+    function normEmail(email = "") {
+      return String(email || "").trim().toLowerCase();
+    }
+
+    function isAdminUser() {
+      const email = normEmail(currentUser?.email || state.email || "");
+      return ADMIN_EMAILS.map(normEmail).includes(email);
+    }
+
+    const skins = {
+      neon: { name: "Neon", price: 0, a: "#6df7ff", b: "#51ff9a" },
+      magma: { name: "Magma", price: 750, a: "#ff5c8a", b: "#ffd166" },
+      royal: { name: "Royal", price: 1200, a: "#9d6dff", b: "#6df7ff" },
+      toxic: { name: "Toxic", price: 1500, a: "#b8ff4d", b: "#00ff88" },
+      ghost: { name: "Ghost", price: 2500, a: "#ffffff", b: "#9da8c7" },
+      ocean: { name: "Ocean", price: 3500, a: "#3aa7ff", b: "#6df7ff" }
+    };
+    const appleSkins = {
+      classic: { name: "Classic Apple", price: 0, emoji: "🍎", a: "#ff5c8a", b: "#ffd166" },
+      gem: { name: "Gem Apple", price: 900, emoji: "💎", a: "#6df7ff", b: "#9d6dff" },
+      coin: { name: "Coin Apple", price: 1500, emoji: "🪙", a: "#ffd166", b: "#ff9f1c" },
+      lightning: { name: "Lightning Apple", price: 3000, emoji: "⚡", a: "#fff76d", b: "#6df7ff" }
+    };
+    const boardThemes = {
+      default: { name: "Neon Grid", price: 0, bg1: "#080d20", bg2: "#10183a" },
+      lava: { name: "Lava Board", price: 2200, bg1: "#200808", bg2: "#3a1810" },
+      space: { name: "Space Board", price: 3000, bg1: "#060716", bg2: "#171038" },
+      ice: { name: "Ice Board", price: 1800, bg1: "#071722", bg2: "#12394a" }
+    };
+    const titles = {
+      rookie: { name: "Rookie", price: 100, emoji: "🥉" },
+      grinder: { name: "Grinder", price: 2500, emoji: "⚙️" },
+      highroller: { name: "High Roller", price: 10000, emoji: "💎" },
+      snakegod: { name: "Snake God", price: 50000, emoji: "🐍" }
+    };
+    const profileIcons = {
+      default: { name: "Default Icon", price: 0, emoji: "🙂" },
+      fire: { name: "Fire Icon", price: 350, emoji: "🔥" },
+      crown: { name: "Crown Icon", price: 700, emoji: "👑" },
+      alien: { name: "Alien Icon", price: 500, emoji: "👽" }
+    };
+
+    const minesTileSkins = {
+      neonmine: { name: "Neon Mine Tiles", price: 0, emoji: "💠", a: "#6df7ff", b: "#9d6dff" },
+      lava: { name: "Lava Tiles", price: 550, emoji: "🌋", a: "#ff5c8a", b: "#ffd166" },
+      emerald: { name: "Emerald Tiles", price: 900, emoji: "💚", a: "#51ff9a", b: "#0b6b3a" },
+      galaxy: { name: "Galaxy Tiles", price: 1400, emoji: "🌌", a: "#9d6dff", b: "#111827" }
+    };
+
+    const minesGemSkins = {
+      classicgem: { name: "Classic Gems", price: 0, emoji: "💎", a: "#6df7ff", b: "#51ff9a" },
+      coin: { name: "Coin Finds", price: 450, emoji: "🪙", a: "#ffd166", b: "#ffb703" },
+      star: { name: "Star Finds", price: 800, emoji: "⭐", a: "#ffd166", b: "#9d6dff" },
+      crystal: { name: "Crystal Finds", price: 1250, emoji: "🔮", a: "#9d6dff", b: "#6df7ff" }
+    };
+
+    const minesItems = {
+      safepulse: { name: "Safe Pulse", price: 650, emoji: "📡", desc: "Cosmetic pulse effect for safe Mines clicks." },
+      luckyhelmet: { name: "Lucky Helmet", price: 1200, emoji: "⛑️", desc: "Cosmetic helmet badge for Mines runs." }
+    };
+
+    const defaultState = {
+      uid: null,
+      email: "",
+      username: "Guest",
+      balance: 100,
+      startingBalance: 100,
+      rebirths: 0,
+      rebirthMultiplier: 1,
+      bestRun: 0,
+      ownedSkins: ["neon"],
+      ownedAppleSkins: ["classic"],
+      ownedBoardThemes: ["default"],
+      ownedTitles: [],
+      ownedIcons: ["default"],
+      ownedMinesTiles: ["neonmine"],
+      ownedMinesGems: ["classicgem"],
+      ownedMinesItems: [],
+      equippedMinesTile: "neonmine",
+      equippedMinesGem: "classicgem",
+      equippedSnakeSkin: "neon",
+      equippedAppleSkin: "classic",
+      equippedBoardTheme: "default",
+      equippedTitle: "",
+      equippedIcon: "default",
+      adminUnlocked: false
+    };
+    let state = { ...defaultState, ...loadLocal() };
+    let activeShopArea = "overall";
+    let activeShopTab = "visual";
+    let currentUser = null;
+    let loadingCloud = false;
+    let authReady = false;
+    let adminUsers = [];
+    const canvas = document.getElementById("snakeCanvas");
+    const ctx = canvas.getContext("2d");
+    let cells = 18;
+    let tile = canvas.width / cells;
+    const els = {
+      pageSelect: document.getElementById("pageSelect"),
+      playerNameTop: document.getElementById("playerNameTop"),
+      balanceTop: document.getElementById("balanceTop"),
+      bonusTop: document.getElementById("bonusTop"),
+      playerName: document.getElementById("playerName"),
+      signupUsername: document.getElementById("signupUsername"),
+      signupEmail: document.getElementById("signupEmail"),
+      signupPassword: document.getElementById("signupPassword"),
+      signupConfirm: document.getElementById("signupConfirm"),
+      loginEmail: document.getElementById("loginEmail"),
+      loginPassword: document.getElementById("loginPassword"),
+      accountStatus: document.getElementById("accountStatus"),
+      accountPill: document.getElementById("accountPill"),
+      betInput: document.getElementById("betInput"),
+      riskMode: document.getElementById("riskMode"),
+      betStat: document.getElementById("betStat"),
+      multStat: document.getElementById("multStat"),
+      potentialStat: document.getElementById("potentialStat"),
+      scoreStat: document.getElementById("scoreStat"),
+      startBtn: document.getElementById("startBtn"),
+      cashoutBtn: document.getElementById("cashoutBtn"),
+      boardStartBtn: document.getElementById("boardStartBtn"),
+      boardCashoutBtn: document.getElementById("boardCashoutBtn"),
+      pauseBtn: document.getElementById("pauseBtn"),
+      resetBtn: document.getElementById("topRefreshBtn"),
+      overlay: document.getElementById("overlay"),
+      overlayTitle: document.getElementById("overlayTitle"),
+      overlayText: document.getElementById("overlayText"),
+      overlayStart: document.getElementById("overlayStart"),
+      cashLeaderboardBody: document.getElementById("cashLeaderboardBody"),
+      rebirthLeaderboardBody: document.getElementById("rebirthLeaderboardBody"),
+      runLeaderboardBody: document.getElementById("runLeaderboardBody"),
+      multiplierTrack: document.getElementById("multiplierTrack"),
+      boardWrap: document.getElementById("boardWrap"),
+      cashPop: document.getElementById("cashPop"),
+      arenaCard: document.getElementById("arenaCard"),
+      shopGrid: document.getElementById("shopGrid"),
+      shopAreaSelect: document.getElementById("shopAreaSelect"),
+      shopHelp: document.getElementById("shopHelp"),
+      rebirthCount: document.getElementById("rebirthCount"),
+      rebirthBonus: document.getElementById("rebirthBonus"),
+      rebirthCost: document.getElementById("rebirthCost"),
+      rebirthNextBonus: document.getElementById("rebirthNextBonus"),
+      minesArenaCard: document.getElementById("minesArenaCard"),
+      minesBoard: document.getElementById("minesBoard"),
+      minesBetStat: document.getElementById("minesBetStat"),
+      minesModeStat: document.getElementById("minesModeStat"),
+      minesMultStat: document.getElementById("minesMultStat"),
+      minesSafeStat: document.getElementById("minesSafeStat"),
+      minesStartBtn: document.getElementById("minesStartBtn"),
+      minesCashoutBtn: document.getElementById("minesCashoutBtn"),
+      minesBetInput: document.getElementById("minesBetInput"),
+      minesMode: document.getElementById("minesMode"),
+      minesMultiplierTrack: document.getElementById("minesMultiplierTrack"),
+      minesCashPop: document.getElementById("minesCashPop"),
+      minesControlBox: document.getElementById("minesControlBox"),
+      minesSideStartBtn: document.getElementById("minesSideStartBtn"),
+      minesSideCashoutBtn: document.getElementById("minesSideCashoutBtn"),
+      slotsArenaCard: document.getElementById("slotsArenaCard"),
+      slotsBetStat: document.getElementById("slotsBetStat"),
+      slotsModeStat: document.getElementById("slotsModeStat"),
+      slotsResultStat: document.getElementById("slotsResultStat"),
+      slotsPotentialStat: document.getElementById("slotsPotentialStat"),
+      slotReels: [document.getElementById("slotReel0"), document.getElementById("slotReel1"), document.getElementById("slotReel2")],
+      slotsResultText: document.getElementById("slotsResultText"),
+      slotsCashPop: document.getElementById("slotsCashPop"),
+      slotsStartBtn: document.getElementById("slotsStartBtn"),
+      slotsStopBtn: document.getElementById("slotsStopBtn"),
+      slotsBetInput: document.getElementById("slotsBetInput"),
+      slotsMode: document.getElementById("slotsMode"),
+      slotsMultiplierTrack: document.getElementById("slotsMultiplierTrack"),
+      slotsControlBox: document.getElementById("slotsControlBox"),
+      slotsSideStartBtn: document.getElementById("slotsSideStartBtn"),
+      slotsSideStopBtn: document.getElementById("slotsSideStopBtn"),
+      hiloArenaCard: document.getElementById("hiloArenaCard"),
+      hiloBetStat: document.getElementById("hiloBetStat"),
+      hiloStreakStat: document.getElementById("hiloStreakStat"),
+      hiloMultStat: document.getElementById("hiloMultStat"),
+      hiloPotentialStat: document.getElementById("hiloPotentialStat"),
+      hiloCard: document.getElementById("hiloCard"),
+      hiloResultText: document.getElementById("hiloResultText"),
+      hiloHigherBtn: document.getElementById("hiloHigherBtn"),
+      hiloLowerBtn: document.getElementById("hiloLowerBtn"),
+      hiloStartBtn: document.getElementById("hiloStartBtn"),
+      hiloCashoutBtn: document.getElementById("hiloCashoutBtn"),
+      hiloBetInput: document.getElementById("hiloBetInput"),
+      hiloCashPop: document.getElementById("hiloCashPop"),
+      hiloMultiplierTrack: document.getElementById("hiloMultiplierTrack"),
+      hiloControlBox: document.getElementById("hiloControlBox"),
+      hiloSideStartBtn: document.getElementById("hiloSideStartBtn"),
+      hiloSideCashoutBtn: document.getElementById("hiloSideCashoutBtn"),
+      diceArenaCard: document.getElementById("diceArenaCard"),
+      diceBetStat: document.getElementById("diceBetStat"),
+      diceChanceStat: document.getElementById("diceChanceStat"),
+      diceMultStat: document.getElementById("diceMultStat"),
+      dicePotentialStat: document.getElementById("dicePotentialStat"),
+      diceRollNumber: document.getElementById("diceRollNumber"),
+      diceMarker: document.getElementById("diceMarker"),
+      diceUnderBtn: document.getElementById("diceUnderBtn"),
+      diceOverBtn: document.getElementById("diceOverBtn"),
+      diceExactBtn: null,
+      diceResultText: document.getElementById("diceResultText"),
+      diceCashPop: document.getElementById("diceCashPop"),
+      diceRollBtn: document.getElementById("diceRollBtn"),
+      diceBetInput: document.getElementById("diceBetInput"),
+      diceSideRollBtn: document.getElementById("diceSideRollBtn"),
+      diceMultiplierTrack: document.getElementById("diceMultiplierTrack"),
+      diceControlBox: document.getElementById("diceControlBox"),
+      twentyoneArenaCard: document.getElementById("twentyoneArenaCard"),
+      twentyoneBetStat: document.getElementById("twentyoneBetStat"),
+      twentyonePlayerStat: document.getElementById("twentyonePlayerStat"),
+      twentyoneDealerStat: document.getElementById("twentyoneDealerStat"),
+      twentyonePayoutStat: document.getElementById("twentyonePayoutStat"),
+      dealerHand: document.getElementById("dealerHand"),
+      playerHand21: document.getElementById("playerHand21"),
+      twentyoneResultText: document.getElementById("twentyoneResultText"),
+      twentyoneHitBtn: document.getElementById("twentyoneHitBtn"),
+      twentyoneStandBtn: document.getElementById("twentyoneStandBtn"),
+      twentyoneStartBtn: document.getElementById("twentyoneStartBtn"),
+      twentyoneCashPop: document.getElementById("twentyoneCashPop"),
+      twentyoneBetInput: document.getElementById("twentyoneBetInput"),
+      twentyoneSideStartBtn: document.getElementById("twentyoneSideStartBtn"),
+      twentyoneControlBox: document.getElementById("twentyoneControlBox"),
+      safecrackerArenaCard: document.getElementById("safecrackerArenaCard"),
+      safeBetStat: document.getElementById("safeBetStat"),
+      safeModeStat: document.getElementById("safeModeStat"),
+      safeRoundStat: document.getElementById("safeRoundStat"),
+      safeMultStat: document.getElementById("safeMultStat"),
+      safeVault: document.getElementById("safeVault"),
+      safeResultText: document.getElementById("safeResultText"),
+      safeButtons: document.getElementById("safeButtons"),
+      safeCashPop: document.getElementById("safeCashPop"),
+      safeStartBtn: document.getElementById("safeStartBtn"),
+      safeCashoutBtn: document.getElementById("safeCashoutBtn"),
+      safeMultiplierTrack: document.getElementById("safeMultiplierTrack"),
+      safeBetInput: document.getElementById("safeBetInput"),
+      safeMode: document.getElementById("safeMode"),
+      safeSideStartBtn: document.getElementById("safeSideStartBtn"),
+      safeSideCashoutBtn: document.getElementById("safeSideCashoutBtn"),
+      safeControlBox: document.getElementById("safeControlBox")
+    };
+    let snake, dir, nextDir, apple, score, activeBet, multiplier, gameTimer, running, paused, speedMs, particles = [];
+    const curves = {
+      easy: [0.1, 0.15, 0.2, 0.25, 0.30, 0.35, 0.40, 0.45, 0.5, 0.60, 0.70, 0.85, 1.0, 1.15, 1.3, 1.45, 1.6, 1.75, 1.85, 2.0, 2.15, 2.3, 2.5, 2.7, 2.9, 3.1, 3.3, 3.5, 3.75, 4.0, 4.25, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 10.0, 100.0],
+      normal: [0.1, 0.15, 0.2, 0.28, 0.36, 0.45, 0.55, 0.68, 0.82, 1.0, 1.2, 1.45, 1.75, 2.1, 2.5, 3.0, 3.6],
+      hard: [0.1, 0.15, 0.2, 0.28, 0.36, 0.45, 0.55, 0.68, 0.82, 1.0, 1.2, 1.45, 1.75, 2.1, 2.5, 3.0, 3.6],
+      extraHard: [0.1, 0.15, 0.2, 0.28, 0.36, 0.45, 0.55, 0.68, 0.82, 1.0, 1.2, 1.45, 1.75, 2.1, 2.5, 3.0, 3.6]
+    };
+    const riskSettings = {
+      easy: { startSpeed: 175, speedDrop: 1, wallDeath: true, label: "Easy" },
+      normal: { startSpeed: 175, speedDrop: 1, wallDeath: true, label: "Easy" },
+      hard: { startSpeed: 175, speedDrop: 1, wallDeath: true, label: "Easy" },
+      extraHard: { startSpeed: 175, speedDrop: 1, wallDeath: true, label: "Easy" }
+    };
+    function userBackupKey(uid) {
+      return `${LOCAL_KEY}_account_${uid}`;
+    }
+
+    function loadUserBackup(uid) {
+      try { return JSON.parse(localStorage.getItem(userBackupKey(uid))) || null; }
+      catch { return null; }
+    }
+
+    function saveUserBackup(uid, data) {
+      try { localStorage.setItem(userBackupKey(uid), JSON.stringify(data)); }
+      catch {}
+    }
+
+    function withTimeout(promise, ms = 6500) {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Firebase request timed out")), ms))
+      ]);
+    }
+
+    function money(n) { return "$" + Math.round(Number(n) || 0).toLocaleString(); }
+    function getBet() { return Math.max(1, Math.floor(Number(els.betInput.value) || 1)); }
+    function getCurve() { return curves[els.riskMode.value] || curves.normal; }
+    const rebirthCosts = [25000, 100000, 250000, 750000, 2250000, 5000000, 25000000];
+    const maxRebirths = rebirthCosts.length;
+
+    function getRebirthCost() {
+      const rebirths = Number(state.rebirths || 0);
+      if (rebirths >= maxRebirths) return null;
+      return rebirthCosts[rebirths];
+    }
+
+    function getNextRebirthMultiplier() {
+      const rebirths = Number(state.rebirths || 0);
+      if (rebirths >= maxRebirths) return Number(state.rebirthMultiplier || 1);
+      return Number((1 + ((rebirths + 1) * 0.5)).toFixed(1));
+    }
+    function currentPotential() { return Math.floor(activeBet * multiplier * state.rebirthMultiplier); }
+    function loadLocal() {
+      try { return JSON.parse(localStorage.getItem(LOCAL_KEY)) || {}; }
+      catch { return {}; }
+    }
+    function saveLocal() {
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
+    }
+    async function saveRichestPlayerEntry() {
+      if (!currentUser) return;
+
+      const email = state.email || currentUser.email || "";
+      const displayName = emailName(email);
+
+      await setDoc(doc(db, "richestPlayers", currentUser.uid), {
+        uid: currentUser.uid,
+        email,
+        username: displayName,
+        displayName,
+        icon: profileIcons[state.equippedIcon]?.emoji || "",
+        title: state.equippedTitle ? (titles[state.equippedTitle]?.name || "") : "",
+        balance: Number(state.balance || 0),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    }
+
+    
+    async function publishLeaderboardProfileInBackground() {
+      if (!currentUser) return;
+
+      try {
+        const email = state.email || currentUser.email || "";
+        const displayName = emailName(email);
+
+        await setDoc(doc(db, "leaderboardProfiles", currentUser.uid), {
+          uid: currentUser.uid,
+          email,
+          username: displayName,
+          displayName,
+          icon: profileIcons[state.equippedIcon]?.emoji || "",
+          title: state.equippedTitle ? (titles[state.equippedTitle]?.name || "") : "",
+          balance: Number(state.balance || 0),
+          rebirths: Number(state.rebirths || 0),
+          rebirthMultiplier: Number(state.rebirthMultiplier || 1),
+          bestRun: Number(state.bestRun || 0),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } catch (err) {
+        console.warn("Leaderboard profile background save failed:", err);
+      }
+    }
+
+    async function saveLeaderboardProfile() {
+      if (!currentUser) return;
+
+      const email = state.email || currentUser.email || "";
+      const displayName = emailName(email);
+
+      const publicData = {
+        uid: currentUser.uid,
+        email,
+        username: displayName,
+        displayName,
+        icon: profileIcons[state.equippedIcon]?.emoji || "",
+        title: state.equippedTitle ? (titles[state.equippedTitle]?.name || "") : "",
+        balance: Number(state.balance || 0),
+        rebirths: Number(state.rebirths || 0),
+        rebirthMultiplier: Number(state.rebirthMultiplier || 1),
+        bestRun: Number(state.bestRun || 0),
+        updatedAt: serverTimestamp()
+      };
+
+      await setDoc(doc(db, "leaderboardProfiles", currentUser.uid), publicData, { merge: true });
+    }
+
+    async function saveCloud() {
+      saveLocal();
+      if (!currentUser || loadingCloud) return;
+
+      state.uid = currentUser.uid;
+      state.email = currentUser.email || state.email || "";
+      state.username = emailName(state.email);
+
+      const data = cleanUserData();
+      saveUserBackup(currentUser.uid, data);
+
+      try {
+        await withTimeout(setDoc(doc(db, "users", currentUser.uid), data, { merge: true }), 4500);
+      } catch (err) {
+        console.warn("Cloud account save delayed/offline:", err);
+      }
+
+      try {
+        await withTimeout(saveLeaderboardProfile(), 4500);
+      } catch (err) {
+        console.warn("Cloud leaderboard profile save delayed/offline:", err);
+      }
+    }
+    function emailName(email = "") {
+      const clean = String(email || "").trim();
+      if (!clean) return "Player";
+      return clean.includes("@") ? clean.split("@")[0] : clean;
+    }
+
+    function accountDisplayName(data = null) {
+      const email = data?.email || currentUser?.email || state.email || "";
+      return emailName(email);
+    }
+
+    function cleanUserData() {
+      const email = currentUser?.email || state.email || "";
+      const displayName = emailName(email);
+
+      return {
+        uid: currentUser?.uid || state.uid || null,
+        email,
+        username: displayName,
+        displayName,
+        icon: profileIcons[state.equippedIcon]?.emoji || "",
+        title: state.equippedTitle ? (titles[state.equippedTitle]?.name || "") : "",
+        balance: Number(state.balance ?? 100),
+        startingBalance: Number(state.startingBalance ?? 100),
+        rebirths: Number(state.rebirths ?? 0),
+        rebirthMultiplier: Number(state.rebirthMultiplier ?? 1),
+        bestRun: Number(state.bestRun ?? 0),
+        ownedSkins: state.ownedSkins || ["neon"],
+        ownedAppleSkins: state.ownedAppleSkins || ["classic"],
+        ownedBoardThemes: state.ownedBoardThemes || ["default"],
+        ownedTitles: state.ownedTitles || [],
+        ownedIcons: state.ownedIcons || ["default"],
+        ownedMinesTiles: state.ownedMinesTiles || ["neonmine"],
+        ownedMinesGems: state.ownedMinesGems || ["classicgem"],
+        ownedMinesItems: state.ownedMinesItems || [],
+        equippedMinesTile: state.equippedMinesTile || "neonmine",
+        equippedMinesGem: state.equippedMinesGem || "classicgem",
+        equippedSnakeSkin: state.equippedSnakeSkin || "neon",
+        equippedAppleSkin: state.equippedAppleSkin || "classic",
+        equippedBoardTheme: state.equippedBoardTheme || "default",
+        equippedTitle: state.equippedTitle || "",
+        equippedIcon: state.equippedIcon || "default",
+        updatedAt: serverTimestamp()
+      };
+    }
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+    }
+    function toast(message, bad = false) {
+      els.accountStatus.innerHTML = bad ? `<span class="negative">${escapeHtml(message)}</span>` : escapeHtml(message);
+    }
+    function renderTop() {
+      const title = state.equippedTitle ? (titles[state.equippedTitle]?.name || "Rookie") : "No Title";
+      const icon = profileIcons[state.equippedIcon]?.emoji || "🙂";
+      const signedIn = !!currentUser;
+      const shownName = signedIn ? emailName(state.email || currentUser.email) : "Guest";
+
+      els.playerNameTop.textContent = signedIn ? `${icon} ${shownName}` : "Guest";
+      els.balanceTop.textContent = money(state.balance ?? 100);
+      els.bonusTop.textContent =Number( Number(state.rebirthMultiplier || 1) || 1).toFixed(1) + "x";
+
+      if (els.playerName) els.playerName.value = shownName;
+      if (signedIn) {
+        els.signupUsername.value = shownName;
+        els.signupEmail.value = state.email || currentUser.email || "";
+        els.loginEmail.value = state.email || currentUser.email || "";
+      } else {
+        els.signupUsername.value = "";
+        els.signupEmail.value = "";
+        els.loginEmail.value = "";
+      }
+
+      els.accountPill.textContent = signedIn ? `Signed in · ${title}` : "Signed out";
+      els.accountStatus.textContent = signedIn
+        ? `Logged in as ${state.email || currentUser.email}. Balance: ${money(state.balance)}.`
+        : "Status: signed out. Create an account or log in before playing.";
+    }
+    function renderStats() {
+      const signedIn = !!currentUser;
+      const bet = running ? activeBet : getBet();
+      els.betStat.textContent = money(bet);
+      els.multStat.textContent = multiplier.toFixed(2) + "x";
+      els.potentialStat.textContent = money(running ? currentPotential() : Math.floor(bet * multiplier * state.rebirthMultiplier));
+      els.scoreStat.textContent = score;
+      els.cashoutBtn.disabled = !running || !signedIn;
+      els.boardCashoutBtn.disabled = !running || !signedIn;
+      els.pauseBtn.disabled = !running || !signedIn;
+      els.startBtn.disabled = running || !signedIn;
+      els.boardStartBtn.disabled = running || !signedIn;
+      renderMultiplierTrack();
+    }
+    function renderMultiplierTrack() {
+      els.multiplierTrack.innerHTML = getCurve().map((m, i) => `<span class="mult-chip ${i <= score ? "hit" : ""}">${m.toFixed(2)}x</span>`).join("");
+    }
+    async function renderLeaderboards() {
+      const btn = document.getElementById("refreshLeaderboardBtn");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Refreshing...";
+      }
+
+      try {
+        if (currentUser) {
+          await saveLeaderboardProfile().catch(err => console.warn("Leaderboard profile publish before refresh failed:", err));
+        }
+
+        await Promise.all([
+          renderCashLeaderboard(),
+          renderRebirthLeaderboard(),
+          renderRunLeaderboard()
+        ]);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Refresh Leaderboards";
+        }
+      }
+    }
+    async function renderCashLeaderboard() {
+      try {
+        let rows = [];
+
+        try {
+          const snap = await withTimeout(getDocsFromServer(collection(db, "leaderboardProfiles")), 8000);
+          rows = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        } catch (profileErr) {
+          console.warn("leaderboardProfiles read failed, trying users:", profileErr);
+          const snap = await withTimeout(getDocsFromServer(collection(db, "users")), 8000);
+          rows = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        }
+
+        rows = rows
+          .filter(r => typeof r.balance !== "undefined")
+          .sort((a, b) => Number(b.balance || 0) - Number(a.balance || 0))
+          .slice(0, 5);
+
+        els.cashLeaderboardBody.innerHTML = rows.length ? rows.map((r, i) => `
+          <tr><td>${i + 1}</td><td>${escapeHtml(formatPlayerName(r))}</td><td class="positive">${money(r.balance ?? 0)}</td></tr>
+        `).join("") : `<tr><td colspan="3" style="color: var(--muted);">No richest players yet. Accounts publish after login/cashout.</td></tr>`;
+      } catch (err) {
+        console.error("Cash leaderboard failed:", err);
+        els.cashLeaderboardBody.innerHTML = `<tr><td colspan="3" class="negative">Could not load richest players. Firestore rules must allow reading leaderboardProfiles.</td></tr>`;
+      }
+    }
+    async function renderRebirthLeaderboard() {
+      try {
+        let rows = [];
+
+        try {
+          const snap = await withTimeout(getDocsFromServer(collection(db, "leaderboardProfiles")), 8000);
+          rows = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        } catch (profileErr) {
+          console.warn("leaderboardProfiles rebirth read failed, trying users:", profileErr);
+          const snap = await withTimeout(getDocsFromServer(collection(db, "users")), 8000);
+          rows = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        }
+
+        rows = rows
+          .sort((a, b) => Number(b.rebirths || 0) - Number(a.rebirths || 0) || Number(b.rebirthMultiplier || 1) - Number(a.rebirthMultiplier || 1))
+          .slice(0, 5);
+
+        els.rebirthLeaderboardBody.innerHTML = rows.length ? rows.map((r, i) => `
+          <tr><td>${i + 1}</td><td>${escapeHtml(formatPlayerName(r))}</td><td class="positive">${r.rebirths || 0}</td><td>${Number(Number(r.rebirthMultiplier || 1) || 1).toFixed(1)}x</td></tr>
+        `).join("") : `<tr><td colspan="4" style="color: var(--muted);">No players yet.</td></tr>`;
+      } catch (err) {
+        console.error("Rebirth leaderboard failed:", err);
+        els.rebirthLeaderboardBody.innerHTML = `<tr><td colspan="4" class="negative">Could not load rebirths.</td></tr>`;
+      }
+    }
+    async function renderRunLeaderboard() {
+      try {
+        let rows = [];
+
+        try {
+          const snap = await withTimeout(getDocsFromServer(collection(db, "leaderboardProfiles")), 8000);
+          rows = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        } catch (profileErr) {
+          console.warn("leaderboardProfiles bestRun read failed, trying users:", profileErr);
+          const snap = await withTimeout(getDocsFromServer(collection(db, "users")), 8000);
+          rows = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        }
+
+        rows = rows
+          .filter(r => Number(r.bestRun || 0) > 0)
+          .sort((a, b) => Number(b.bestRun || 0) - Number(a.bestRun || 0))
+          .slice(0, 5);
+
+        els.runLeaderboardBody.innerHTML = rows.length ? rows.map((r, i) => `
+          <tr><td>${i + 1}</td><td>${escapeHtml(formatPlayerName(r))}</td><td class="positive">${money(r.bestRun || 0)}</td></tr>
+        `).join("") : `<tr><td colspan="3" style="color: var(--muted);">No best runs yet. Cash out once to appear here.</td></tr>`;
+      } catch (err) {
+        console.error("Best run leaderboard failed:", err);
+        els.runLeaderboardBody.innerHTML = `<tr><td colspan="3" class="negative">Could not load best runs.</td></tr>`;
+      }
+    }
+    function getDisplayName(userLike = null) {
+      const source = userLike || {};
+      const raw =
+        source.username ||
+        state.username ||
+        currentUser?.displayName ||
+        source.email ||
+        currentUser?.email ||
+        state.email ||
+        "Player";
+
+      if (raw.includes("@")) return raw.split("@")[0];
+      return raw || "Player";
+    }
+
+    function formatPlayerName(r) {
+      const icon = r.icon || "";
+      const title = r.title ? ` · ${r.title}` : "";
+      const name = r.email ? emailName(r.email) : (r.displayName || r.username || "Player");
+      return `${icon} ${name}${title}`.trim();
+    }
+    function renderRebirthPage() {
+      const cost = getRebirthCost();
+      const rebirths = Number(state.rebirths || 0);
+      const atMax = rebirths >= maxRebirths;
+
+      els.rebirthCount.textContent = rebirths;
+      els.rebirthBonus.textContent = Number(Number(state.rebirthMultiplier || 1) || 1).toFixed(1) + "x";
+      els.rebirthCost.textContent = atMax ? "Max rebirths" : money(cost);
+      els.rebirthNextBonus.textContent = atMax ? "Max rebirths" : getNextRebirthMultiplier().toFixed(1) + "x";
+
+      const btn = document.getElementById("rebirthBtn");
+      btn.disabled = atMax || state.balance < cost;
+      btn.textContent = atMax ? "Max Rebirths" : "Rebirth";
+    }
+    function renderShop() {
+      activeShopArea = "overall";
+      els.shopAreaSelect.value = "overall";
+      updateShopTabs();
+      const tabName = { visual: "visual cosmetics", gameplay: "game items", leaderboard: "leaderboard flex items" }[activeShopTab];
+      const areaName = "Shop";
+      els.shopHelp.textContent = `${areaName} · ${tabName}.`;
+      const items = getShopItems();
+      els.shopGrid.innerHTML = items.map(item => {
+        const owned = item.ownedKey ? state[item.ownedKey].includes(item.id) : false;
+        const equipped = item.equippedKey ? state[item.equippedKey] === item.id : false;
+        const comingSoon = item.soon;
+        return `
+          <article class="shop-item">
+            <div class="skin-preview" style="--skin-a:${item.a || "#6df7ff"}; --skin-b:${item.b || "#9d6dff"};">${item.emoji || (comingSoon ? "🔒" : "")}</div>
+            <div>
+              <h3>${escapeHtml(item.name)} <span class="hint">${item.price}</span></h3>
+              <p class="hint">${escapeHtml(item.desc)}</p>
+            </div>
+            <button data-shop-id="${item.id}" data-shop-type="${item.type}" ${equipped || comingSoon ? "disabled" : ""}>${comingSoon ? "Coming Soon" : equipped ? "Equipped" : owned ? "Equip" : item.price === 0 ? "Claim" : `Buy ${item.price}`}</button>
+          </article>
+        `;
+      }).join("");
+      document.querySelectorAll("[data-shop-id]").forEach(btn => {
+        btn.addEventListener("click", () => buyOrEquipShopItem(btn.dataset.shopId, btn.dataset.shopType));
+      });
+    }
+    function updateShopTabs() {
+      activeShopArea = "overall";
+      const leaderboardTab = document.getElementById("leaderboardShopTab");
+      if (leaderboardTab) leaderboardTab.style.display = "block";
+    }
+    function getShopItems() {
+      if (true) {
+        if (activeShopTab === "visual") {
+          return Object.entries(profileIcons).map(([id, item]) => ({ id, type: "icon", ownedKey: "ownedIcons", equippedKey: "equippedIcon", desc: "Icon shown beside your name.", a: "#6df7ff", b: "#9d6dff", ...item }));
+        }
+        if (activeShopTab === "leaderboard") {
+          return Object.entries(titles).map(([id, item]) => ({ id, type: "title", ownedKey: "ownedTitles", equippedKey: "equippedTitle", desc: "Title shown with your account style.", a: "#ffd166", b: "#9d6dff", ...item }));
+        }
+        return [
+          { id: "dailyboost", type: "boost", name: "Daily Boost", price: 0, desc: "Free once per day. Gives +$100.", emoji: "📅", a: "#51ff9a", b: "#6df7ff" },
+          { id: "vault", type: "soon", name: "Vault", price: 1200, desc: "Later: protect some credits from rebirth resets.", emoji: "🏦", soon: true }
+        ];
+      }
+
+      if (activeShopArea === "mines") {
+        if (activeShopTab === "visual") {
+          return [
+            ...Object.entries(minesTileSkins).map(([id, item]) => ({ id, type: "minesTile", ownedKey: "ownedMinesTiles", equippedKey: "equippedMinesTile", desc: "Changes the Mines tile look.", ...item })),
+            ...Object.entries(minesGemSkins).map(([id, item]) => ({ id, type: "minesGem", ownedKey: "ownedMinesGems", equippedKey: "equippedMinesGem", desc: "Changes safe tile rewards.", ...item }))
+          ];
+        }
+        if (activeShopTab === "leaderboard") return [];
+        return Object.entries(minesItems).map(([id, item]) => ({ id, type: "minesItem", ownedKey: "ownedMinesItems", equippedKey: "", a: "#ffd166", b: "#ff5c8a", ...item }));
+      }
+
+      if (activeShopTab === "visual") {
+        return [
+          ...Object.entries(skins).map(([id, item]) => ({ id, type: "snake", ownedKey: "ownedSkins", equippedKey: "equippedSnakeSkin", desc: "Changes your Snake colors.", ...item })),
+          ...Object.entries(appleSkins).map(([id, item]) => ({ id, type: "apple", ownedKey: "ownedAppleSkins", equippedKey: "equippedAppleSkin", desc: "Changes the apple style.", ...item })),
+          ...Object.entries(boardThemes).map(([id, item]) => ({ id, type: "board", ownedKey: "ownedBoardThemes", equippedKey: "equippedBoardTheme", desc: "Changes the Snake board background.", a: item.bg1, b: item.bg2, ...item }))
+        ];
+      }
+      if (activeShopTab === "leaderboard") {
+        return [];
+      }
+      return [
+        { id: "magnet", type: "soon", name: "Magnet", price: 350, desc: "Later: pulls apples slightly closer.", emoji: "🧲", soon: true },
+        { id: "shield", type: "soon", name: "Shield", price: 500, desc: "Later: survives one crash per run.", emoji: "🛡️", soon: true }
+      ];
+    }
+    async function buyOrEquipShopItem(id, type) {
+      const groups = {
+        snake: { data: skins, ownedKey: "ownedSkins", equippedKey: "equippedSnakeSkin" },
+        apple: { data: appleSkins, ownedKey: "ownedAppleSkins", equippedKey: "equippedAppleSkin" },
+        board: { data: boardThemes, ownedKey: "ownedBoardThemes", equippedKey: "equippedBoardTheme" },
+        title: { data: titles, ownedKey: "ownedTitles", equippedKey: "equippedTitle" },
+        icon: { data: profileIcons, ownedKey: "ownedIcons", equippedKey: "equippedIcon" },
+        minesTile: { data: minesTileSkins, ownedKey: "ownedMinesTiles", equippedKey: "equippedMinesTile" },
+        minesGem: { data: minesGemSkins, ownedKey: "ownedMinesGems", equippedKey: "equippedMinesGem" },
+        minesItem: { data: minesItems, ownedKey: "ownedMinesItems", equippedKey: "" }
+      };
+      if (type === "boost" && id === "dailyboost") {
+        const today = new Date().toISOString().slice(0, 10);
+        if (state.lastDailyBoost === today) return toast("Daily Boost already claimed today.", true);
+        state.lastDailyBoost = today;
+        state.balance += 100;
+        await saveCloud();
+        renderAll();
+        toast("Daily Boost claimed: +$100.");
+      }
+      const group = groups[type];
+      if (!group) return;
+      const item = group.data[id];
+      if (!item) return;
+      if (!state[group.ownedKey].includes(id)) {
+        if (state.balance < item.price) return toast(`Not enough credits for ${item.name}.`, true);
+        state.balance -= item.price;
+        state[group.ownedKey].push(id);
+      }
+      if (group.equippedKey) state[group.equippedKey] = id;
+      await saveCloud();
+      renderAll();
+      if (typeof renderMines === "function") renderMines();
+      draw();
+    }
+    async function adminWipeAllUsers() {
+      if (!isAdminUser()) {
+        toast("Admin access denied. Log in with the admin email.", true);
+      }
+
+      if (!confirm("WIPE ALL USERS? This resets balances, rebirths, best runs, and shop items for every loaded user.")) return;
+
+      try {
+        if (!adminUsers.length) await loadAdminUsers();
+
+        for (const user of adminUsers) {
+          const resetData = {
+            balance: 100,
+            startingBalance: 100,
+            rebirths: 0,
+            rebirthMultiplier: 1,
+            bestRun: 0,
+            ownedSkins: ["neon"],
+            ownedAppleSkins: ["classic"],
+            ownedBoardThemes: ["default"],
+            ownedTitles: [],
+            ownedIcons: ["default"],
+            ownedMinesTiles: ["neonmine"],
+            ownedMinesGems: ["classicgem"],
+            ownedMinesItems: [],
+            equippedSnakeSkin: "neon",
+            equippedAppleSkin: "classic",
+            equippedBoardTheme: "default",
+            equippedTitle: "",
+            equippedIcon: "default",
+            equippedMinesTile: "neonmine",
+            equippedMinesGem: "classicgem",
+            updatedAt: serverTimestamp()
+          };
+
+          await setDoc(doc(db, "users", user.uid), resetData, { merge: true });
+          await setDoc(doc(db, "leaderboardProfiles", user.uid), {
+            uid: user.uid,
+            email: user.email || "",
+            username: user.username || (user.email ? emailName(user.email) : "Player"),
+            displayName: user.displayName || user.username || (user.email ? emailName(user.email) : "Player"),
+            balance: 100,
+            rebirths: 0,
+            rebirthMultiplier: 1,
+            bestRun: 0,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        }
+
+        if (currentUser) await loadUserFromCloud(currentUser, false);
+        await loadAdminUsers();
+        toast("All loaded users wiped/reset.");
+      } catch (err) {
+        console.error("Wipe all users failed:", err);
+        toast("Could not wipe all users.", true);
+      }
+    }
+
+    function playSound(type) {
+      try {
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audio.createOscillator();
+        const gain = audio.createGain();
+        osc.connect(gain);
+        gain.connect(audio.destination);
+        const now = audio.currentTime;
+        const settings = { eat: [620, 0.045, 0.04], cashout: [880, 0.06, 0.12], crash: [110, 0.09, 0.18], click: [420, 0.035, 0.035] }[type] || [440, 0.04, 0.05];
+        osc.frequency.setValueAtTime(settings[0], now);
+        if (type === "crash") osc.frequency.exponentialRampToValueAtTime(55, now + settings[2]);
+        if (type === "cashout") osc.frequency.exponentialRampToValueAtTime(1320, now + settings[2]);
+        gain.gain.setValueAtTime(settings[1], now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + settings[2]);
+        osc.start(now);
+        osc.stop(now + settings[2]);
+      } catch {}
+    }
+    function applyModeGrid() {
+      const modeCells = { easy: 10, normal: 16, hard: 22, extraHard: 30 };
+      cells = modeCells[els.riskMode.value] || 16;
+      tile = canvas.width / cells;
+    }
+    function resetSnakeVisual() {
+      applyModeGrid();
+      const mid = Math.floor(cells / 2);
+      snake = [{ x: mid, y: mid }, { x: mid - 1, y: mid }, { x: mid - 2, y: mid }];
+      dir = { x: 1, y: 0 };
+      nextDir = { x: 1, y: 0 };
+      apple = randomApple();
+      score = 0;
+      activeBet = getBet();
+      multiplier = getCurve()[0];
+      running = false;
+      paused = false;
+      particles = [];
+      speedMs = riskSettings[els.riskMode.value].startSpeed;
+      draw();
+      renderStats();
+    }
+    function randomApple() {
+      let spot;
+      do { spot = { x: Math.floor(Math.random() * cells), y: Math.floor(Math.random() * cells) }; }
+      while (snake && snake.some(p => p.x === spot.x && p.y === spot.y));
+      return spot;
+    }
+    
+    let activeGame = "snake";
+    let minesRunning = false;
+    let minesBet = 25;
+    let minesBombs = [];
+    let minesRevealed = new Set();
+    const minesCells = 25;
+
+    const minesSettings = {
+      easy: {
+        bombs: 1,
+        label: "Easy",
+        curve: [1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 3.75, 4.0, 4.5, 5.0, 5.5, 6.0, 7.5, 10.0]
+      },
+      medium: {
+        bombs: 2,
+        label: "Medium",
+        curve: [1.0, 1.1, 1.2, 1.35, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.5, 9.0, 10.0, 11.5, 13.0, 15.0, 20.0]
+      },
+      hard: {
+        bombs: 3,
+        label: "Hard",
+        curve: [1.0, 1.1, 1.3, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0, 7.5, 10.0, 12.5, 15.0, 20.0, 25.0, 35.0, 50.0, 100.0]
+      }
+    };
+
+    function switchGame(game) {
+      activeGame = game;
+      document.querySelectorAll(".game-tile[data-game]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.game === game);
+      });
+
+      const snakeActive = game === "snake";
+      const minesActive = game === "mines";
+      const slotsActive = game === "slots";
+      const hiloActive = game === "hilo";
+      const diceActive = game === "dice";
+      const twentyoneActive = game === "twentyone";
+      const safeActive = game === "safecracker";
+
+      els.arenaCard.classList.toggle("mines-hidden", !snakeActive);
+      els.minesArenaCard.classList.toggle("mines-hidden", !minesActive);
+      els.slotsArenaCard.classList.toggle("mines-hidden", !slotsActive);
+      els.hiloArenaCard.classList.toggle("mines-hidden", !hiloActive);
+      els.diceArenaCard.classList.toggle("mines-hidden", !diceActive);
+      els.twentyoneArenaCard.classList.toggle("mines-hidden", !twentyoneActive);
+      els.safecrackerArenaCard.classList.toggle("mines-hidden", !safeActive);
+
+      const controlChildren = Array.from(els.startBtn.closest(".card-body").children);
+      controlChildren.forEach(child => {
+        if (child.id !== "minesControlBox" && child.id !== "slotsControlBox" && child.id !== "hiloControlBox" && child.id !== "diceControlBox" && child.id !== "twentyoneControlBox" && child.id !== "safeControlBox") {
+          child.classList.toggle("mines-hidden", !snakeActive);
+        }
+      });
+
+      els.minesControlBox.classList.toggle("mines-hidden", !minesActive);
+      els.slotsControlBox.classList.toggle("mines-hidden", !slotsActive);
+      els.hiloControlBox.classList.toggle("mines-hidden", !hiloActive);
+      els.diceControlBox.classList.toggle("mines-hidden", !diceActive);
+      els.twentyoneControlBox.classList.toggle("mines-hidden", !twentyoneActive);
+      els.safeControlBox.classList.toggle("mines-hidden", !safeActive);
+
+      if (game === "mines") renderMines();
+      else if (game === "slots") renderSlots();
+      else if (game === "hilo") renderHiLo();
+      else if (game === "dice") renderDice();
+      else if (game === "twentyone") renderTwentyOne();
+      else if (game === "safecracker") renderSafeCracker();
+      else renderStats();
+    }
+
+    function getMinesBet() {
+      const v = Math.floor(Number(els.minesBetInput.value || 1));
+      return Math.max(1, Math.min(999999999, v));
+    }
+
+    function getMinesSetting() {
+      return minesSettings[els.minesMode.value] || minesSettings.medium;
+    }
+
+    function currentMinesMultiplier() {
+      const setting = getMinesSetting();
+      if (minesRevealed.size === 0) return 1;
+      return setting.curve[Math.min(minesRevealed.size - 1, setting.curve.length - 1)] || setting.curve.at(-1);
+    }
+
+    function currentMinesWin() {
+      return Math.max(1, Math.floor(minesBet * currentMinesMultiplier() * Number(state.rebirthMultiplier || 1)));
+    }
+
+    function renderMines() {
+      const setting = getMinesSetting();
+      els.minesBetStat.textContent = money(minesRunning ? minesBet : getMinesBet());
+      els.minesModeStat.textContent = setting.label;
+      els.minesMultStat.textContent = currentMinesMultiplier().toFixed(2) + "x";
+      els.minesSafeStat.textContent = String(minesRevealed.size);
+      els.minesCashoutBtn.disabled = !minesRunning || minesRevealed.size === 0;
+      els.minesSideCashoutBtn.disabled = !minesRunning || minesRevealed.size === 0;
+      els.minesStartBtn.disabled = minesRunning;
+      els.minesSideStartBtn.disabled = minesRunning;
+
+      if (!els.minesBoard.children.length) {
+        buildMinesBoard();
+      }
+
+      Array.from(els.minesBoard.children).forEach((tile, idx) => {
+        tile.className = "mine-tile";
+        tile.disabled = !minesRunning || minesRevealed.has(idx);
+        const tileSkin = minesTileSkins[state.equippedMinesTile] || minesTileSkins.neonmine;
+        tile.style.background = `linear-gradient(135deg, ${tileSkin.a}, ${tileSkin.b})`;
+
+        if (minesRevealed.has(idx)) {
+          tile.classList.add("safe");
+          tile.textContent = (minesGemSkins[state.equippedMinesGem]?.emoji || "💎");
+        } else if (!minesRunning && minesBombs.includes(idx)) {
+          tile.classList.add("bomb");
+          tile.textContent = "💣";
+        } else {
+          tile.textContent = "";
+        }
+
+        if (!minesRunning) tile.classList.add("locked");
+      });
+
+      renderMinesMultipliers();
+    }
+
+    function renderMinesMultipliers() {
+      const setting = getMinesSetting();
+      els.minesMultiplierTrack.innerHTML = setting.curve.slice(0, 12).map((m, i) => `
+        <span class="mult-chip ${i < minesRevealed.size ? "hit" : ""}">${m.toFixed(2)}x</span>
+      `).join("");
+    }
+
+    function buildMinesBoard() {
+      els.minesBoard.innerHTML = "";
+      for (let i = 0; i < minesCells; i++) {
+        const tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = "mine-tile";
+        tile.dataset.index = i;
+        tile.addEventListener("click", () => clickMineTile(i));
+        els.minesBoard.appendChild(tile);
+      }
+    }
+
+    async function startMines() {
+      if (!currentUser) {
+        switchPage("account");
+        toast("You need to create an account or log in before playing.", true);
+        return;
+      }
+      if (minesRunning) return;
+
+      minesBet = getMinesBet();
+      if (minesBet > state.balance) {
+        toast("Not enough balance for that Mines bet.", true);
+        return;
+      }
+
+      state.balance -= minesBet;
+      saveLocal();
+      renderTop();
+
+      const setting = getMinesSetting();
+      minesBombs = [];
+      while (minesBombs.length < setting.bombs) {
+        const n = Math.floor(Math.random() * minesCells);
+        if (!minesBombs.includes(n)) minesBombs.push(n);
+      }
+
+      minesRevealed = new Set();
+      minesRunning = true;
+
+      buildMinesBoard();
+      renderMines();
+      playSound("click");
+      saveCloud().catch(err => console.warn("Mines start save failed:", err));
+    }
+
+    function clickMineTile(index) {
+      index = Number(index);
+      if (!minesRunning || minesRevealed.has(index) || index < 0 || index >= minesCells) return;
+
+      if (minesBombs.includes(index)) {
+        minesRunning = false;
+        playSound("crash");
+
+        Array.from(els.minesBoard.children).forEach((tile, idx) => {
+          if (minesBombs.includes(idx)) {
+            tile.className = "mine-tile bomb";
+            tile.textContent = "💣";
+          }
+        });
+
+        toast("Boom! You hit a mine.", true);
+        renderMines();
+        return;
+      }
+
+      minesRevealed.add(index);
+      playSound("eat");
+      renderMines();
+    }
+
+    async function cashoutMines() {
+      if (!minesRunning || minesRevealed.size === 0) return;
+
+      minesRunning = false;
+      const win = currentMinesWin();
+
+      state.balance = Number(state.balance || 0) + win;
+      state.bestRun = Math.max(Number(state.bestRun || 0), win);
+
+      saveLocal();
+      renderTop();
+      renderMines();
+
+      showMinesCashPop(win);
+      launchConfetti();
+      playSound("cashout");
+
+      els.minesArenaCard.classList.remove("pulse-win");
+      void els.minesArenaCard.offsetWidth;
+      els.minesArenaCard.classList.add("pulse-win");
+
+      try {
+        await saveCloud();
+      } catch (e) {
+        console.error("Mines cashout save failed:", e);
+      }
+
+      try {
+        await addDoc(collection(db, "cashLeaderboard"), {
+          username: emailName(state.email || currentUser?.email || ""),
+          displayName: emailName(state.email || currentUser?.email || ""),
+          email: state.email || currentUser?.email || "",
+          game: "Mines",
+          cash: win,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {
+        console.error("Mines run history save failed:", e);
+      }
+
+      publishLeaderboardProfileInBackground();
+      toast(`Mines cashout: ${money(win)}.`);
+    }
+
+    async function startRun() {
+      if (!currentUser) {
+        switchPage("account");
+        toast("You need to create an account or log in before playing.", true);
+      }
+
+      if (running) return;
+
+      activeBet = getBet();
+
+      if (activeBet > state.balance) {
+        showOverlay("Not enough credits", "Lower your bet, claim the daily boost, or earn more credits.", "Try Again");
+      }
+
+      // Make the run start instantly. Save the deducted bet in the background.
+      state.balance -= activeBet;
+      saveLocal();
+
+      resetRunBoard();
+      running = true;
+      paused = false;
+      els.pauseBtn.textContent = "Pause";
+      els.overlay.classList.add("hidden");
+
+      playSound("click");
+      renderAll(false);
+      loop();
+
+      // Background cloud save, so Firebase delay does not freeze the game start.
+      saveCloud().catch(err => console.warn("Background start-run save failed:", err));
+    }
+    function resetRunBoard() {
+      applyModeGrid();
+      const mid = Math.floor(cells / 2);
+      snake = [{ x: mid, y: mid }, { x: mid - 1, y: mid }, { x: mid - 2, y: mid }];
+      dir = { x: 1, y: 0 };
+      nextDir = { x: 1, y: 0 };
+      apple = randomApple();
+      score = 0;
+      multiplier = getCurve()[0];
+      speedMs = riskSettings[els.riskMode.value].startSpeed;
+      particles = [];
+    }
+    function loop() {
+      clearTimeout(gameTimer);
+      if (!running || paused) return;
+      update();
+      draw();
+      gameTimer = setTimeout(loop, speedMs);
+    }
+    function update() {
+      dir = nextDir;
+      const settings = riskSettings[els.riskMode.value];
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+      if (!settings.wallDeath) {
+        head.x = (head.x + cells) % cells;
+        head.y = (head.y + cells) % cells;
+      }
+      const wallHit = head.x < 0 || head.x >= cells || head.y < 0 || head.y >= cells;
+      const selfHit = snake.some(part => part.x === head.x && part.y === head.y);
+      if (wallHit || selfHit) return crash(wallHit ? "the wall" : "yourself");
+      snake.unshift(head);
+      if (head.x === apple.x && head.y === apple.y) {
+        score += 1;
+        const curve = getCurve();
+        multiplier = curve[Math.min(score, curve.length - 1)] + Math.max(0, score - curve.length + 1) * (els.riskMode.value === "extraHard" ? 2.0 : els.riskMode.value === "hard" ? 1.2 : els.riskMode.value === "normal" ? 0.7 : 0.25);
+        speedMs = Math.max(80, speedMs - Math.max(1, Math.floor(settings.speedDrop * 0.45)));
+        apple = randomApple();
+        playSound("eat");
+      } else {
+        snake.pop();
+      }
+      renderStats();
+    }
+    function crash(reason) {
+      running = false;
+      clearTimeout(gameTimer);
+      playSound("crash");
+      els.boardWrap.classList.remove("shake");
+      void els.boardWrap.offsetWidth;
+      els.boardWrap.classList.add("shake");
+      draw();
+      showOverlay("Crashed!", `You hit ${reason} and lost ${money(activeBet)}.`, "Run It Back");
+      renderStats();
+    }
+    async function cashout() {
+      if (!running) return;
+
+      running = false;
+      paused = false;
+      clearTimeout(gameTimer);
+
+      const rawWin = Number(currentPotential()) || 0;
+      const win = Math.max(1, Math.floor(rawWin));
+
+      state.email = currentUser?.email || state.email || "";
+      state.username = emailName(state.email);
+      state.balance = Number(state.balance || 0) + win;
+      state.bestRun = Math.max(Number(state.bestRun || 0), win);
+
+      saveLocal();
+      renderTop();
+      renderStats();
+
+      showCashPop(win);
+      launchConfetti();
+      playSound("cashout");
+
+      els.arenaCard.classList.remove("pulse-win");
+      void els.arenaCard.offsetWidth;
+      els.arenaCard.classList.add("pulse-win");
+
+      try {
+        await saveCloud();
+        await saveLeaderboardProfile().catch(err => console.warn('Leaderboard profile after cashout failed:', err));
+      } catch (e) {
+        console.error("Balance/best run save failed:", e);
+      }
+
+      try {
+        await addDoc(collection(db, "cashLeaderboard"), {
+          username: emailName(state.email),
+          displayName: emailName(state.email),
+          email: state.email,
+          icon: profileIcons[state.equippedIcon]?.emoji || "",
+          title: state.equippedTitle ? (titles[state.equippedTitle]?.name || "") : "",
+          cash: win,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {
+        console.error("Run history save failed:", e);
+      }
+
+      resetSnakeVisual();
+      showOverlay("Ready?", "Press space to play/pause.", "Start Run");
+      renderAll();
+      publishLeaderboardProfileInBackground();
+
+      if (els.pageSelect?.value === "leaderboard") {
+        await renderLeaderboards();
+      }
+    }
+    function showCashPop(amount) {
+      els.cashPop.innerHTML = `
+        <div style="font-size:1.25rem;">CASHED OUT!</div>
+        <div style="font-size:1.9rem;">You won ${money(amount)}!</div>
+      `;
+      els.cashPop.classList.remove("hidden");
+      void els.cashPop.offsetWidth;
+      setTimeout(() => {
+        els.cashPop.classList.add("hidden");
+      }, 1700);
+    }
+
+    function showMinesCashPop(amount) {
+      const pop = els.minesCashPop || els.cashPop;
+      if (!pop) return;
+      pop.innerHTML = `
+        <div style="font-size:1.25rem;">MINES CASHOUT!</div>
+        <div style="font-size:1.9rem;">You won ${money(amount)}!</div>
+      `;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(() => {
+        pop.classList.add("hidden");
+      }, 1700);
+    }
+
+    function launchConfetti() {
+      const colors = ["#6df7ff", "#51ff9a", "#ffd166", "#9d6dff", "#ff5c8a"];
+      for (let i = 0; i < 34; i++) {
+        const piece = document.createElement("div");
+        piece.className = "confetti-piece";
+        piece.style.background = colors[i % colors.length];
+        piece.style.setProperty("--x", `${(Math.random() - 0.5) * 420}px`);
+        piece.style.setProperty("--y", `${(Math.random() - 0.7) * 360}px`);
+        piece.style.animationDelay = `${Math.random() * 90}ms`;
+        els.boardWrap.appendChild(piece);
+        setTimeout(() => piece.remove(), 1100);
+      }
+    }
+    function togglePause() {
+      if (!running) return;
+      paused = !paused;
+      els.pauseBtn.textContent = paused ? "Resume" : "Pause";
+      if (paused) showOverlay("Paused", "Press Space to resume, or cash out now.", "Resume");
+      else { els.overlay.classList.add("hidden"); loop(); }
+      renderStats();
+    }
+    function showOverlay(title, text, buttonText) {
+      els.overlayTitle.textContent = title;
+      els.overlayText.textContent = text;
+      els.overlayStart.textContent = buttonText;
+      els.overlay.classList.remove("hidden");
+    }
+    function burst(x, y, count) {
+      const skin = skins[state.equippedSnakeSkin] || skins.neon;
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: x * tile + tile / 2,
+          y: y * tile + tile / 2,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.5) * 8,
+          life: 18 + Math.random() * 14,
+          color: Math.random() > 0.5 ? skin.a : skin.b
+        });
+      }
+    }
+    function draw() {
+      if (!snake || !apple) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const theme = boardThemes[state.equippedBoardTheme] || boardThemes.default;
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, theme.bg1);
+      gradient.addColorStop(1, theme.bg2);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "rgba(255,255,255,0.045)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= cells; i++) {
+        ctx.beginPath(); ctx.moveTo(i * tile, 0); ctx.lineTo(i * tile, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i * tile); ctx.lineTo(canvas.width, i * tile); ctx.stroke();
+      }
+      const appleStyle = appleSkins[state.equippedAppleSkin] || appleSkins.classic;
+      drawGlowCell(apple.x, apple.y, appleStyle.a, appleStyle.b, 0.85);
+      drawAppleEmoji(apple.x, apple.y, appleStyle.emoji || "🍎");
+      const skin = skins[state.equippedSnakeSkin] || skins.neon;
+      snake.forEach((part, i) => drawGlowCell(part.x, part.y, i === 0 ? skin.a : skin.b, i === 0 ? skin.b : skin.a, i === 0 ? 0.95 : 0.72));
+      drawParticles();
+    }
+    function drawAppleEmoji(x, y, emoji) {
+      ctx.save();
+      ctx.font = `${tile * 0.7}px system-ui, Apple Color Emoji, Segoe UI Emoji`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(255,255,255,0.6)";
+      ctx.shadowBlur = 8;
+      ctx.fillText(emoji, x * tile + tile / 2, y * tile + tile / 2 + 1);
+      ctx.restore();
+    }
+    function drawParticles() {
+      particles = particles.filter(p => p.life > 0);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.vx *= 0.92; p.vy *= 0.92; p.life -= 1;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life / 28);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 12;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      });
+    }
+    function drawGlowCell(x, y, colorA, colorB, alpha) {
+      const px = x * tile, py = y * tile, pad = 3, r = 8;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = colorA;
+      ctx.shadowBlur = 18;
+      const g = ctx.createLinearGradient(px, py, px + tile, py + tile);
+      g.addColorStop(0, colorA); g.addColorStop(1, colorB);
+      ctx.fillStyle = g;
+      roundRect(ctx, px + pad, py + pad, tile - pad * 2, tile - pad * 2, r);
+      ctx.fill(); ctx.restore();
+    }
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+    function setDirection(name) {
+      const map = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+      const nd = map[name];
+      if (!nd) return;
+      if (nd.x === -dir.x && nd.y === -dir.y) return;
+      nextDir = nd;
+    }
+    function switchPage(page) {
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      document.getElementById(page + "Page")?.classList.add("active");
+      els.pageSelect.value = page;
+      if (page === "shop") renderShop();
+      if (page === "rebirth") renderRebirthPage();
+      if (page === "admin") renderAdminVisibility();
+    }
+    async function createAccount() {
+      const email = els.signupEmail.value.trim();
+      const password = els.signupPassword.value;
+      const confirm = els.signupConfirm.value;
+      const createButton = document.getElementById("createAccountBtn");
+
+      if (!email || !password || !confirm) return toast("Fill in email, password, and confirm password.", true);
+      if (password !== confirm) return toast("Passwords do not match.", true);
+
+      try {
+        if (createButton) {
+          createButton.disabled = true;
+          createButton.textContent = "Creating...";
+        }
+
+        toast("Creating account...");
+        const cred = await withTimeout(createUserWithEmailAndPassword(auth, email, password), 10000);
+        const displayName = emailName(email);
+        await updateProfile(cred.user, { displayName }).catch(() => {});
+
+        currentUser = cred.user;
+        state = {
+          ...defaultState,
+          uid: cred.user.uid,
+          email,
+          username: displayName,
+          balance: 100,
+          startingBalance: 100,
+          rebirths: 0,
+          rebirthMultiplier: 1,
+          bestRun: 0
+        };
+
+        const data = cleanUserData();
+        saveUserBackup(cred.user.uid, data);
+
+        setDoc(doc(db, "users", cred.user.uid), {
+          ...data,
+          createdAt: serverTimestamp()
+        }, { merge: true }).catch(err => console.warn("Initial account cloud save delayed:", err));
+
+        publishLeaderboardProfileInBackground();
+
+        saveLocal();
+        renderAll();
+        renderAdminVisibility();
+        resetSnakeVisual();
+        if (typeof buildMinesBoard === "function") buildMinesBoard();
+        if (typeof renderMines === "function") renderMines();
+        toast(`Account created. Logged in as ${displayName}. Balance: $100.`);
+        switchPage("home");
+      } catch (err) {
+        toast(formatAuthError(err), true);
+      } finally {
+        if (createButton) {
+          createButton.disabled = false;
+          createButton.textContent = "Create Account";
+        }
+      }
+    }
+    function formatAuthError(err) {
+      const msg = err?.message || String(err);
+      if (msg.includes("configuration-not-found")) return "Firebase Auth is not turned on yet. In Firebase: Authentication → Get started → Sign-in method → enable Email/Password.";
+      if (msg.includes("invalid-credential")) return "Wrong email or password.";
+      if (msg.includes("email-already-in-use")) return "That email already has an account. Try logging in.";
+      if (msg.includes("weak-password")) return "Password needs to be at least 6 characters.";
+      if (msg.includes("offline") || msg.includes("timed out")) return "Firebase is taking too long/offline. Check internet, Firebase rules, or try again.";
+      return msg;
+    }
+    async function loginAccount() {
+      const email = els.loginEmail.value.trim();
+      const password = els.loginPassword.value;
+      const loginButton = document.getElementById("loginBtn");
+
+      if (!email || !password) return toast("Fill in email and password.", true);
+
+      try {
+        if (loginButton) {
+          loginButton.disabled = true;
+          loginButton.textContent = "Logging in...";
+        }
+
+        toast("Logging in...");
+        const cred = await withTimeout(signInWithEmailAndPassword(auth, email, password), 10000);
+
+        currentUser = cred.user;
+        await loadUserFromCloud(cred.user, false);
+
+        renderAll();
+        renderAdminVisibility();
+        resetSnakeVisual();
+        if (typeof renderMines === "function") renderMines();
+        switchPage("home");
+      } catch (err) {
+        toast(formatAuthError(err), true);
+      } finally {
+        if (loginButton) {
+          loginButton.disabled = false;
+          loginButton.textContent = "Log In";
+        }
+      }
+    }
+    async function loadUserFromCloud(user, refreshBoards = false) {
+      loadingCloud = true;
+      currentUser = user;
+
+      const ref = doc(db, "users", user.uid);
+      const email = user.email || "";
+      let cloud = null;
+      let cloudWorked = false;
+
+      try {
+        const snap = await withTimeout(getDoc(ref), 4500);
+        if (snap.exists()) {
+          cloud = snap.data();
+          cloudWorked = true;
+        }
+      } catch (err) {
+        console.warn("Cloud load failed/offline:", err);
+      }
+
+      const backup = loadUserBackup(user.uid);
+
+      if (cloud) {
+        state = {
+          ...defaultState,
+          ...cloud,
+          uid: user.uid,
+          email: email || cloud.email || "",
+          username: emailName(email || cloud.email || ""),
+          balance: Number(cloud.balance ?? 100),
+          startingBalance: Number(cloud.startingBalance ?? 100),
+          rebirths: Number(cloud.rebirths ?? 0),
+          rebirthMultiplier: Number(cloud.rebirthMultiplier ?? 1),
+          bestRun: Number(cloud.bestRun ?? 0)
+        };
+      } else if (backup) {
+        state = {
+          ...defaultState,
+          ...backup,
+          uid: user.uid,
+          email: email || backup.email || "",
+          username: emailName(email || backup.email || ""),
+          balance: Number(backup.balance ?? 100),
+          startingBalance: Number(backup.startingBalance ?? 100),
+          rebirths: Number(backup.rebirths ?? 0),
+          rebirthMultiplier: Number(backup.rebirthMultiplier ?? 1),
+          bestRun: Number(backup.bestRun ?? 0)
+        };
+      } else {
+        state = {
+          ...defaultState,
+          uid: user.uid,
+          email,
+          username: emailName(email),
+          balance: 100,
+          startingBalance: 100,
+          rebirths: 0,
+          rebirthMultiplier: 1,
+          bestRun: 0
+        };
+      }
+
+      const data = cleanUserData();
+      saveUserBackup(user.uid, data);
+
+      // Save/repair in the background. Do not block login.
+      setDoc(ref, data, { merge: true }).catch(err => console.warn("Background account repair failed:", err));
+      publishLeaderboardProfileInBackground();
+
+      loadingCloud = false;
+      saveLocal();
+      renderAll();
+      renderAdminVisibility();
+      resetSnakeVisual();
+      if (typeof buildMinesBoard === "function") buildMinesBoard();
+      if (typeof renderMines === "function") renderMines();
+
+      if (refreshBoards) await renderLeaderboards();
+
+      toast(`Logged in as ${emailName(state.email)}. Balance loaded: ${money(state.balance)}.`);
+    }
+    async function updateRebirthLeaderboard() {
+      if (!currentUser) return;
+      await setDoc(doc(db, "rebirthLeaderboard", currentUser.uid), {
+        username: state.username,
+        icon: profileIcons[state.equippedIcon]?.emoji || "",
+        title: state.equippedTitle ? (titles[state.equippedTitle]?.name || "") : "",
+        rebirths: state.rebirths,
+        bonus: state.rebirthMultiplier,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    }
+    async function rebirth() {
+      const cost = getRebirthCost();
+      if (cost === null) return toast("Max rebirths reached.", true);
+      if (state.balance < cost) return toast(`You need ${money(cost)} to rebirth.`, true);
+
+      const previousBestRun = Number(state.bestRun || 0);
+
+      state.rebirths += 1;
+      state.rebirthMultiplier = Number((1 + (Number(state.rebirths || 0) * 0.5)).toFixed(1));
+      state.balance = 100;
+      state.startingBalance = 100;
+
+      state.ownedSkins = ["neon"];
+      state.ownedAppleSkins = ["classic"];
+      state.ownedBoardThemes = ["default"];
+      state.ownedTitles = [];
+      state.ownedIcons = ["default"];
+      state.ownedMinesTiles = ["neonmine"];
+      state.ownedMinesGems = ["classicgem"];
+      state.ownedMinesItems = [];
+
+      state.equippedSnakeSkin = "neon";
+      state.equippedAppleSkin = "classic";
+      state.equippedBoardTheme = "default";
+      state.equippedTitle = "";
+      state.equippedIcon = "default";
+      state.equippedMinesTile = "neonmine";
+      state.equippedMinesGem = "classicgem";
+
+      state.bestRun = previousBestRun;
+
+      await saveCloud();
+      await updateRebirthLeaderboard();
+      publishLeaderboardProfileInBackground();
+      renderAll();
+      toast(`Rebirth complete. Bonus is now ${Number(state.rebirthMultiplier || 1).toFixed(1)}x.`);
+    }
+    
+function renderAdminVisibility() {
+      const unlocked = isAdminUser();
+      const gateCard = document.getElementById("adminGateCard");
+      const gate = document.getElementById("adminGate");
+      const panel = document.getElementById("adminPanelCard");
+
+      if (gateCard) gateCard.style.display = unlocked ? "none" : "block";
+      if (panel) panel.style.display = unlocked ? "block" : "none";
+
+      if (gate) {
+        gate.innerHTML = currentUser
+          ? `<p class="hint">Logged in as <b>${escapeHtml(currentUser.email || "")}</b>.</p><p class="hint">Admin unlocks only for <b>koby.webster5113@gmail.com</b>.</p>`
+          : `<p class="hint">Log in with the approved admin email to unlock dev tools.</p><p class="hint"><b>Admin email:</b> koby.webster5113@gmail.com</p>`;
+      }
+
+      if (unlocked) loadAdminUsers();
+    }
+    async function loadAdminUsers() {
+      if (!isAdminUser()) {
+        toast("Admin access denied. Log in with the admin email.", true);
+      }
+
+      const select = document.getElementById("adminUserSelect");
+      if (!select) return;
+
+      select.innerHTML = `<option value="">Loading users...</option>`;
+
+      try {
+        const snap = await getDocsFromServer(collection(db, "users"));
+        adminUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+          .sort((a, b) => Number(b.balance || 0) - Number(a.balance || 0));
+
+        select.innerHTML = adminUsers.length
+          ? adminUsers.map(u => `<option value="${u.uid}">${escapeHtml((u.email || u.username || u.uid))} · ${money(u.balance || 0)}</option>`).join("")
+          : `<option value="">No users found</option>`;
+
+        toast(`Loaded ${adminUsers.length} users.`);
+      } catch (err) {
+        console.error("Admin users load failed:", err);
+        select.innerHTML = `<option value="">Could not load users</option>`;
+        toast("Could not load users. Check Firestore admin rules.", true);
+      }
+    }
+    async function adminUpdateUserBalance(mode, amount) {
+      if (!isAdminUser()) {
+        toast("Admin access denied. Log in with the admin email.", true);
+      }
+
+      const select = document.getElementById("adminUserSelect");
+      const uid = select?.value;
+      if (!uid) return toast("Pick a user first.", true);
+
+      const user = adminUsers.find(u => u.uid === uid) || {};
+      const current = Number(user.balance || 0);
+      const newBalance = mode === "set" ? Number(amount || 0) : current + Number(amount || 0);
+
+      try {
+        await setDoc(doc(db, "users", uid), {
+          balance: newBalance,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        await setDoc(doc(db, "leaderboardProfiles", uid), {
+          uid,
+          email: user.email || "",
+          username: user.username || (user.email ? emailName(user.email) : "Player"),
+          displayName: user.displayName || user.username || (user.email ? emailName(user.email) : "Player"),
+          icon: user.icon || "",
+          title: user.title || "",
+          balance: newBalance,
+          rebirths: Number(user.rebirths || 0),
+          rebirthMultiplier: Number(user.rebirthMultiplier || 1),
+          bestRun: Number(user.bestRun || 0),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        if (currentUser?.uid === uid) {
+          state.balance = newBalance;
+          saveLocal();
+          renderAll();
+        }
+
+        await loadAdminUsers();
+        toast(`Updated ${user.email || uid} to ${money(newBalance)}.`);
+      } catch (err) {
+        console.error("Admin balance update failed:", err);
+        toast("Could not update user. Check Firestore rules.", true);
+      }
+    }
+    async function adminResetPickedUser() {
+      if (!isAdminUser()) {
+        toast("Admin access denied. Log in with the admin email.", true);
+      }
+
+      const uid = document.getElementById("adminUserSelect")?.value;
+      if (!uid) return toast("Pick a user first.", true);
+
+      const user = adminUsers.find(u => u.uid === uid) || {};
+      if (!confirm(`Reset ${user.email || uid}?`)) return;
+
+      const resetData = {
+        balance: 100,
+        startingBalance: 100,
+        rebirths: 0,
+        rebirthMultiplier: 1,
+        bestRun: 0,
+        ownedSkins: ["neon"],
+        ownedAppleSkins: ["classic"],
+        ownedBoardThemes: ["default"],
+        ownedTitles: [],
+        ownedIcons: ["default"],
+        ownedMinesTiles: ["neonmine"],
+        ownedMinesGems: ["classicgem"],
+        ownedMinesItems: [],
+        equippedSnakeSkin: "neon",
+        equippedAppleSkin: "classic",
+        equippedBoardTheme: "default",
+        equippedTitle: "",
+        equippedIcon: "default",
+        equippedMinesTile: "neonmine",
+        equippedMinesGem: "classicgem",
+        updatedAt: serverTimestamp()
+      };
+
+      try {
+        await setDoc(doc(db, "users", uid), resetData, { merge: true });
+        await setDoc(doc(db, "leaderboardProfiles", uid), {
+          uid,
+          email: user.email || "",
+          username: user.username || (user.email ? emailName(user.email) : "Player"),
+          displayName: user.displayName || user.username || (user.email ? emailName(user.email) : "Player"),
+          balance: 100,
+          rebirths: 0,
+          rebirthMultiplier: 1,
+          bestRun: 0,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        if (currentUser?.uid === uid) {
+          state = { ...defaultState, uid, email: currentUser.email || "", username: emailName(currentUser.email || "") };
+          saveLocal();
+          renderAll();
+        }
+
+        await loadAdminUsers();
+        toast("Selected user reset.");
+      } catch (err) {
+        console.error("Reset picked user failed:", err);
+        toast("Could not reset selected user.", true);
+      }
+    }
+    async function adminAddEveryone(amount = 500) {
+      if (!isAdminUser()) {
+        toast("Admin access denied. Log in with the admin email.", true);
+      }
+
+      if (!confirm(`Add ${money(amount)} to every loaded user?`)) return;
+
+      try {
+        if (!adminUsers.length) await loadAdminUsers();
+
+        for (const user of adminUsers) {
+          const newBalance = Number(user.balance || 0) + Number(amount || 0);
+          await setDoc(doc(db, "users", user.uid), {
+            balance: newBalance,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+
+          await setDoc(doc(db, "leaderboardProfiles", user.uid), {
+            uid: user.uid,
+            email: user.email || "",
+            username: user.username || (user.email ? emailName(user.email) : "Player"),
+            displayName: user.displayName || user.username || (user.email ? emailName(user.email) : "Player"),
+            balance: newBalance,
+            rebirths: Number(user.rebirths || 0),
+            rebirthMultiplier: Number(user.rebirthMultiplier || 1),
+            bestRun: Number(user.bestRun || 0),
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        }
+
+        await loadAdminUsers();
+        toast(`Added ${money(amount)} to everyone.`);
+      } catch (err) {
+        console.error("Add everyone failed:", err);
+        toast("Could not add money to everyone.", true);
+      }
+    }
+    function renderAll(includeBoards = true) {
+      renderTop();
+      renderStats();
+      renderShop();
+      renderRebirthPage();
+      renderAdminVisibility();
+      if (includeBoards) renderLeaderboards();
+    }
+    document.addEventListener("keydown", e => {
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
+      const keyMap = { ArrowUp: "up", w: "up", W: "up", ArrowDown: "down", s: "down", S: "down", ArrowLeft: "left", a: "left", A: "left", ArrowRight: "right", d: "right", D: "right" };
+      if (keyMap[e.key]) { e.preventDefault(); setDirection(keyMap[e.key]); }
+      if (e.key === " ") { e.preventDefault(); if (running) togglePause(); else startRun(); }
+      if (e.key.toLowerCase() === "c") cashout();
+    });
+    document.querySelectorAll("[data-dir]").forEach(btn => btn.addEventListener("click", () => setDirection(btn.dataset.dir)));
+    document.querySelectorAll(".shop-tab").forEach(btn => btn.addEventListener("click", () => { activeShopTab = btn.dataset.shopTab; renderShop(); }));
+    els.shopAreaSelect.addEventListener("change", () => {
+      activeShopArea = "overall";
+      renderShop();
+    });
+    els.pageSelect.addEventListener("change", () => switchPage(els.pageSelect.value));
+
+    let slotsRunning = false;
+    let slotsTimer = null;
+    let slotsBet = 25;
+    let slotsResult = ["🍒", "🍋", "💎"];
+
+    const slotSymbols = ["🍒", "🍋", "🍊", "🍇", "🔔", "⭐", "💎"];
+    const slotModes = {
+      easy: { label: "Easy", two: 1.5, three: 10.0, diamond: 100.0 },
+      normal: { label: "Normal", two: 1.5, three: 10.0, diamond: 100.0 },
+      hard: { label: "Hard", two: 1.5, three: 10.0, diamond: 100.0 }
+    };
+
+    function getSlotsBet() {
+      const v = Math.floor(Number(els.slotsBetInput.value || 1));
+      return Math.max(1, Math.min(999999999, v));
+    }
+
+    function getSlotsMode() {
+      return slotModes[els.slotsMode.value] || slotModes.normal;
+    }
+
+    function calculateSlotsWin(result = slotsResult) {
+      const mode = getSlotsMode();
+      const counts = {};
+      result.forEach(s => counts[s] = (counts[s] || 0) + 1);
+
+      let mult = 0;
+      if (result[0] === result[1] && result[1] === result[2]) {
+        mult = result[0] === "💎" ? mode.diamond : mode.three;
+      } else if (Object.values(counts).some(v => v === 2)) {
+        mult = mode.two;
+      } else {
+        mult = 0;
+      }
+
+      return {
+        multiplier: mult,
+        win: Math.floor(slotsBet * mult * Number(state.rebirthMultiplier || 1))
+      };
+    }
+
+    function renderSlots() {
+      const mode = getSlotsMode();
+      els.slotsBetStat.textContent = money(slotsRunning ? slotsBet : getSlotsBet());
+      els.slotsModeStat.textContent = mode.label;
+
+      const calc = calculateSlotsWin(slotsResult);
+      els.slotsResultStat.textContent = slotsRunning ? "Spinning" : (calc.win > 0 ? calc.multiplier.toFixed(2) + "x" : "Ready");
+      els.slotsPotentialStat.textContent = slotsRunning ? "?" : money(calc.win || 0);
+
+      els.slotsStartBtn.disabled = slotsRunning;
+      els.slotsSideStartBtn.disabled = slotsRunning;
+      els.slotsStopBtn.disabled = !slotsRunning;
+      els.slotsSideStopBtn.disabled = !slotsRunning;
+
+      els.slotReels.forEach((reel, i) => {
+        reel.textContent = slotsResult[i];
+        reel.classList.toggle("flashing", slotsRunning);
+      });
+
+      els.slotsMultiplierTrack.innerHTML = `
+        <span class="mult-chip">2 Match ${mode.two.toFixed(2)}x</span>
+        <span class="mult-chip">3 Match ${mode.three.toFixed(2)}x</span>
+        <span class="mult-chip">💎💎💎 ${mode.diamond.toFixed(2)}x</span>
+      `;
+    }
+
+    async function startSlots() {
+      if (!currentUser) {
+        switchPage("account");
+        toast("You need to create an account or log in before playing.", true);
+      }
+      if (slotsRunning) return;
+
+      slotsBet = getSlotsBet();
+      if (slotsBet > state.balance) {
+        toast("Not enough balance for that Slots bet.", true);
+      }
+
+      state.balance -= slotsBet;
+      saveLocal();
+      renderTop();
+
+      slotsRunning = true;
+      els.slotsResultText.textContent = "Switching fast... press Stop!";
+      playSound("click");
+
+      if (slotsTimer) clearInterval(slotsTimer);
+      slotsTimer = setInterval(() => {
+        slotsResult = slotsResult.map(() => slotSymbols[Math.floor(Math.random() * slotSymbols.length)]);
+        renderSlots();
+      }, 80);
+
+      renderSlots();
+      saveCloud().catch(err => console.warn("Slots start save failed:", err));
+    }
+
+    async function stopSlots() {
+      if (!slotsRunning) return;
+
+      slotsRunning = false;
+      if (slotsTimer) {
+        clearInterval(slotsTimer);
+        slotsTimer = null;
+      }
+
+      // Final snap result.
+      slotsResult = slotsResult.map(() => slotSymbols[Math.floor(Math.random() * slotSymbols.length)]);
+      const { multiplier, win } = calculateSlotsWin(slotsResult);
+
+      renderSlots();
+
+      if (win > 0) {
+        state.balance = Number(state.balance || 0) + win;
+        state.bestRun = Math.max(Number(state.bestRun || 0), win);
+        saveLocal();
+        renderTop();
+
+        showSlotsCashPop(win);
+        launchConfetti();
+        playSound("cashout");
+        els.slotsArenaCard.classList.remove("pulse-win");
+        void els.slotsArenaCard.offsetWidth;
+        els.slotsArenaCard.classList.add("pulse-win");
+        els.slotsResultText.textContent = `Nice! ${multiplier.toFixed(2)}x win.`;
+      } else {
+        playSound("crash");
+        els.slotsResultText.textContent = "No match. Try again.";
+        toast("Slots missed.", true);
+      }
+
+      try {
+        await saveCloud();
+      } catch (e) {
+        console.error("Slots save failed:", e);
+      }
+
+      if (win > 0) {
+        try {
+          await addDoc(collection(db, "cashLeaderboard"), {
+            username: emailName(state.email || currentUser?.email || ""),
+            displayName: emailName(state.email || currentUser?.email || ""),
+            email: state.email || currentUser?.email || "",
+            game: "Slots",
+            cash: win,
+            createdAt: serverTimestamp()
+          });
+        } catch (e) {
+          console.error("Slots run history save failed:", e);
+        }
+        publishLeaderboardProfileInBackground();
+      }
+    }
+
+    function showSlotsCashPop(amount) {
+      const pop = els.slotsCashPop || els.cashPop;
+      if (!pop) return;
+      pop.innerHTML = `
+        <div style="font-size:1.25rem;">SLOTS WIN!</div>
+        <div style="font-size:1.9rem;">You won ${money(amount)}!</div>
+      `;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(() => {
+        pop.classList.add("hidden");
+      }, 1700);
+    }
+
+
+    let hiloRunning = false;
+    let hiloBet = 25;
+    let hiloCardValue = 7;
+    let hiloCardText = "7♠";
+    let hiloStreak = 0;
+
+    const hiloSuits = ["♠", "♥", "♦", "♣"];
+    const hiloRanks = [
+      { rank: "A", value: 1 }, { rank: "2", value: 2 }, { rank: "3", value: 3 },
+      { rank: "4", value: 4 }, { rank: "5", value: 5 }, { rank: "6", value: 6 },
+      { rank: "7", value: 7 }, { rank: "8", value: 8 }, { rank: "9", value: 9 },
+      { rank: "10", value: 10 }, { rank: "J", value: 11 }, { rank: "Q", value: 12 },
+      { rank: "K", value: 13 }
+    ];
+    const hiloCurve = [1.0, 1.5, 2.0, 2.5, 3.5, 5.0, 7.5, 10.0, 15.0, 50.0, 75.0, 100.0];
+
+    function drawHiLoCard() {
+      const r = hiloRanks[Math.floor(Math.random() * hiloRanks.length)];
+      const s = hiloSuits[Math.floor(Math.random() * hiloSuits.length)];
+      return { value: r.value, text: `${r.rank}${s}`, red: s === "♥" || s === "♦" };
+    }
+
+    function getHiLoBet() {
+      const v = Math.floor(Number(els.hiloBetInput.value || 1));
+      return Math.max(1, Math.min(999999999, v));
+    }
+
+    function currentHiLoMultiplier() {
+      if (hiloStreak <= 0) return 1;
+      return hiloCurve[Math.min(hiloStreak - 1, hiloCurve.length - 1)] || hiloCurve[hiloCurve.length - 1];
+    }
+
+    function currentHiLoWin() {
+      return Math.max(1, Math.floor(hiloBet * currentHiLoMultiplier() * Number(state.rebirthMultiplier || 1)));
+    }
+
+    function renderHiLo() {
+      els.hiloBetStat.textContent = money(hiloRunning ? hiloBet : getHiLoBet());
+      els.hiloStreakStat.textContent = String(hiloStreak);
+      els.hiloMultStat.textContent = currentHiLoMultiplier().toFixed(2) + "x";
+      els.hiloPotentialStat.textContent = hiloRunning && hiloStreak > 0 ? money(currentHiLoWin()) : "$0";
+
+      els.hiloCard.textContent = hiloCardText;
+      els.hiloCard.classList.toggle("red", hiloCardText.includes("♥") || hiloCardText.includes("♦"));
+
+      els.hiloHigherBtn.disabled = !hiloRunning;
+      els.hiloLowerBtn.disabled = !hiloRunning;
+      els.hiloCashoutBtn.disabled = !hiloRunning || hiloStreak === 0;
+      els.hiloSideCashoutBtn.disabled = !hiloRunning || hiloStreak === 0;
+      els.hiloStartBtn.disabled = hiloRunning;
+      els.hiloSideStartBtn.disabled = hiloRunning;
+
+      els.hiloMultiplierTrack.innerHTML = hiloCurve.map((m, i) => `
+        <span class="mult-chip ${i < hiloStreak ? "hit" : ""}">${m.toFixed(2)}x</span>
+      `).join("");
+    }
+
+    async function startHiLo() {
+      if (!currentUser) {
+        switchPage("account");
+        toast("You need to create an account or log in before playing.", true);
+      }
+      if (hiloRunning) return;
+
+      hiloBet = getHiLoBet();
+      if (hiloBet > state.balance) {
+        toast("Not enough balance for that Hi-Lo bet.", true);
+      }
+
+      state.balance -= hiloBet;
+      saveLocal();
+      renderTop();
+
+      const first = drawHiLoCard();
+      hiloCardValue = first.value;
+      hiloCardText = first.text;
+      hiloStreak = 0;
+      hiloRunning = true;
+
+      els.hiloResultText.textContent = "Guess if the next card is higher or lower.";
+      playSound("click");
+      renderHiLo();
+      saveCloud().catch(err => console.warn("Hi-Lo start save failed:", err));
+    }
+
+    async function guessHiLo(choice) {
+      if (!hiloRunning) return;
+
+      let next = drawHiLoCard();
+      let guard = 0;
+      while (next.value === hiloCardValue && guard < 20) {
+        next = drawHiLoCard();
+        guard++;
+      }
+
+      const oldText = hiloCardText;
+      const oldValue = hiloCardValue;
+      hiloCardValue = next.value;
+      hiloCardText = next.text;
+
+      const correct = choice === "higher" ? next.value > oldValue : next.value < oldValue;
+
+      if (correct) {
+        hiloStreak += 1;
+        playSound("eat");
+        els.hiloResultText.textContent = `Correct! ${oldText} → ${next.text}`;
+        renderHiLo();
+      } else {
+        hiloRunning = false;
+        playSound("crash");
+        els.hiloResultText.textContent = `Wrong! ${oldText} → ${next.text}.`;
+        renderHiLo();
+        await saveCloud().catch(err => console.warn("Hi-Lo loss save failed:", err));
+      }
+    }
+
+    async function cashoutHiLo() {
+      if (!hiloRunning || hiloStreak === 0) return;
+
+      hiloRunning = false;
+      const win = currentHiLoWin();
+
+      state.balance = Number(state.balance || 0) + win;
+      state.bestRun = Math.max(Number(state.bestRun || 0), win);
+      saveLocal();
+      renderTop();
+      renderHiLo();
+
+      showHiLoCashPop(win);
+      launchConfetti();
+      playSound("cashout");
+
+      els.hiloArenaCard.classList.remove("pulse-win");
+      void els.hiloArenaCard.offsetWidth;
+      els.hiloArenaCard.classList.add("pulse-win");
+
+      els.hiloResultText.textContent = `Cashed out after ${hiloStreak} correct guesses.`;
+
+      try {
+        await saveCloud();
+      } catch (e) {
+        console.error("Hi-Lo cashout save failed:", e);
+      }
+
+      try {
+        await addDoc(collection(db, "cashLeaderboard"), {
+          username: emailName(state.email || currentUser?.email || ""),
+          displayName: emailName(state.email || currentUser?.email || ""),
+          email: state.email || currentUser?.email || "",
+          game: "Hi-Lo",
+          cash: win,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {
+        console.error("Hi-Lo run history save failed:", e);
+      }
+
+      publishLeaderboardProfileInBackground();
+    }
+
+    function showHiLoCashPop(amount) {
+      const pop = els.hiloCashPop || els.cashPop;
+      if (!pop) return;
+      pop.innerHTML = `
+        <div style="font-size:1.25rem;">HI-LO CASHOUT!</div>
+        <div style="font-size:1.9rem;">You won ${money(amount)}!</div>
+      `;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(() => pop.classList.add("hidden"), 1700);
+    }
+
+
+
+    let diceMode = "under";
+    let diceBet = 25;
+
+    function getDiceBet() {
+      const v = Math.floor(Number(els.diceBetInput.value || 1));
+      return Math.max(1, Math.min(999999999, v));
+    }
+
+    function getDiceMultiplier() {
+      return 2.0;
+    }
+
+    function renderDice() {
+      const mult = getDiceMultiplier();
+      const bet = getDiceBet();
+      const potential = Math.floor(bet * mult * Number(state.rebirthMultiplier || 1));
+
+      els.diceChanceStat.textContent = "50%";
+      els.diceMultStat.textContent = mult.toFixed(2) + "x";
+      els.dicePotentialStat.textContent = money(potential);
+
+      els.diceUnderBtn.classList.toggle("active", diceMode === "under");
+      els.diceOverBtn.classList.toggle("active", diceMode === "over");
+
+      if (els.diceMarker && els.diceRollNumber.textContent === "-") {
+        els.diceMarker.style.left = "50%";
+      }
+
+      els.diceResultText.textContent = diceMode === "under"
+        ? "Roll 1, 2, or 3 to win."
+        : "Roll 4, 5, or 6 to win.";
+
+      els.diceMultiplierTrack.innerHTML = `
+        <span class="mult-chip hit">Under 2.00x</span>
+        <span class="mult-chip hit">Over 2.00x</span>
+      `;
+    }
+
+    async function rollDiceGame() {
+      if (!currentUser) {
+        switchPage("account");
+        toast("You need to create an account or log in before playing.", true);
+      }
+
+      diceBet = getDiceBet();
+      if (diceBet > state.balance) {
+        toast("Not enough balance for that Dice bet.", true);
+      }
+
+      const mult = getDiceMultiplier();
+      const roll = Math.floor(Math.random() * 6) + 1;
+      const won = diceMode === "under" ? roll <= 3 : roll >= 4;
+
+      state.balance -= diceBet;
+      els.diceRollNumber.textContent = roll;
+      if (els.diceMarker) {
+        const percent = ((roll - 1) / 5) * 100;
+        els.diceMarker.style.left = percent + "%";
+      }
+
+      if (won) {
+        const win = Math.floor(diceBet * mult * Number(state.rebirthMultiplier || 1));
+        state.balance += win;
+        state.bestRun = Math.max(Number(state.bestRun || 0), win);
+
+        showDiceCashPop(win);
+        launchConfetti();
+        playSound("cashout");
+
+        els.diceArenaCard.classList.remove("pulse-win");
+        void els.diceArenaCard.offsetWidth;
+        els.diceArenaCard.classList.add("pulse-win");
+
+        els.diceResultText.textContent = `Rolled ${roll}. You won ${money(win)}.`;
+
+        try {
+          await addDoc(collection(db, "cashLeaderboard"), {
+            username: emailName(state.email || currentUser?.email || ""),
+            displayName: emailName(state.email || currentUser?.email || ""),
+            email: state.email || currentUser?.email || "",
+            game: "Dice",
+            cash: win,
+            createdAt: serverTimestamp()
+          });
+        } catch (e) {
+          console.error("Dice run history save failed:", e);
+        }
+      } else {
+        playSound("crash");
+        els.diceResultText.textContent = `Rolled ${roll}. You lost.`;
+      }
+
+      saveLocal();
+      renderTop();
+      renderDice();
+      await saveCloud().catch(err => console.warn("Dice save failed:", err));
+      publishLeaderboardProfileInBackground();
+    }
+
+    function showDiceCashPop(amount) {
+      const pop = els.diceCashPop || els.cashPop;
+      if (!pop) return;
+      pop.innerHTML = `
+        <div style="font-size:1.25rem;">DICE WIN!</div>
+        <div style="font-size:1.9rem;">You won ${money(amount)}!</div>
+      `;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(() => pop.classList.add("hidden"), 1700);
+    }
+
+
+    let twentyoneRunning = false;
+    let twentyoneBet = 25;
+    let playerCards21 = [];
+    let dealerCards21 = [];
+    let dealerHidden21 = true;
+
+    const cardSuits21 = ["♠", "♥", "♦", "♣"];
+    const cardRanks21 = [
+      { rank: "2", value: 2 }, { rank: "3", value: 3 }, { rank: "4", value: 4 },
+      { rank: "5", value: 5 }, { rank: "6", value: 6 }, { rank: "7", value: 7 },
+      { rank: "8", value: 8 }, { rank: "9", value: 9 }, { rank: "10", value: 10 },
+      { rank: "J", value: 10 }, { rank: "Q", value: 10 }, { rank: "K", value: 10 }
+    ];
+
+    function getTwentyOneBet() {
+      const v = Math.floor(Number(els.twentyoneBetInput?.value || 1));
+      return Math.max(1, Math.min(999999999, v));
+    }
+
+    function drawCard21() {
+      const r = cardRanks21[Math.floor(Math.random() * cardRanks21.length)];
+      const s = cardSuits21[Math.floor(Math.random() * cardSuits21.length)];
+      return { ...r, suit: s, text: `${r.rank}${s}`, red: s === "♥" || s === "♦" };
+    }
+
+    function total21(cards) {
+      return cards.reduce((sum, c) => sum + c.value, 0);
+    }
+
+    function renderHand21(container, cards, hideFirst = false) {
+      container.innerHTML = cards.map((c, i) => {
+        if (hideFirst && i === 0) return `<div class="twentyone-card hidden-card">?</div>`;
+        return `<div class="twentyone-card ${c.red ? "red" : ""}">${c.text}</div>`;
+      }).join("");
+    }
+
+    function renderTwentyOne() {
+      const playerTotal = total21(playerCards21);
+      const dealerTotal = dealerHidden21 ? (dealerCards21[1]?.value || 0) : total21(dealerCards21);
+
+      els.twentyoneBetStat.textContent = money(getTwentyOneBet());
+      els.twentyonePlayerStat.textContent = String(playerTotal || 0);
+      els.twentyoneDealerStat.textContent = dealerHidden21 ? `${dealerTotal}+?` : String(dealerTotal || 0);
+      els.twentyonePayoutStat.textContent = "2.00x";
+
+      renderHand21(els.playerHand21, playerCards21, false);
+      renderHand21(els.dealerHand, dealerCards21, dealerHidden21);
+
+      els.twentyoneHitBtn.disabled = !twentyoneRunning;
+      els.twentyoneStandBtn.disabled = !twentyoneRunning;
+      els.twentyoneStartBtn.disabled = twentyoneRunning;
+      els.twentyoneSideStartBtn.disabled = twentyoneRunning;
+    }
+
+    async function startTwentyOne() {
+      if (!currentUser) {
+        switchPage("account");
+        toast("You need to create an account or log in before playing.", true);
+      }
+      if (twentyoneRunning) return;
+
+      twentyoneBet = getTwentyOneBet();
+      if (twentyoneBet > state.balance) {
+        toast("Not enough balance for that 21 bet.", true);
+      }
+
+      state.balance -= twentyoneBet;
+      playerCards21 = [drawCard21(), drawCard21()];
+      dealerCards21 = [drawCard21(), drawCard21()];
+      dealerHidden21 = true;
+      twentyoneRunning = true;
+
+      saveLocal();
+      renderTop();
+      renderTwentyOne();
+      playSound("click");
+      els.twentyoneResultText.textContent = "Hit or stand. Closest to 21 wins.";
+      saveCloud().catch(err => console.warn("21 start save failed:", err));
+
+      if (total21(playerCards21) === 21) {
+        await standTwentyOne();
+      }
+    }
+
+    async function hitTwentyOne() {
+      if (!twentyoneRunning) return;
+      playerCards21.push(drawCard21());
+      playSound("eat");
+      renderTwentyOne();
+
+      if (total21(playerCards21) > 21) {
+        twentyoneRunning = false;
+        dealerHidden21 = false;
+        playSound("crash");
+        els.twentyoneResultText.textContent = "Bust! You went over 21.";
+        renderTwentyOne();
+        await saveCloud().catch(err => console.warn("21 bust save failed:", err));
+      }
+    }
+
+    async function standTwentyOne() {
+      if (!twentyoneRunning) return;
+      dealerHidden21 = false;
+
+      while (total21(dealerCards21) < 17) {
+        dealerCards21.push(drawCard21());
+      }
+
+      const p = total21(playerCards21);
+      const d = total21(dealerCards21);
+      let result = "";
+      let win = 0;
+
+      if (d > 21 || p > d) {
+        win = Math.floor(twentyoneBet * 2 * Number(state.rebirthMultiplier || 1));
+        state.balance += win;
+        state.bestRun = Math.max(Number(state.bestRun || 0), win);
+        result = `You win ${money(win)}!`;
+        showTwentyOneCashPop(win);
+        launchConfetti();
+        playSound("cashout");
+
+        try {
+          await addDoc(collection(db, "cashLeaderboard"), {
+            username: emailName(state.email || currentUser?.email || ""),
+            displayName: emailName(state.email || currentUser?.email || ""),
+            email: state.email || currentUser?.email || "",
+            game: "21",
+            cash: win,
+            createdAt: serverTimestamp()
+          });
+        } catch (e) {
+          console.error("21 run history save failed:", e);
+        }
+      } else if (p === d) {
+        state.balance += twentyoneBet;
+        result = "Push. Bet returned.";
+        playSound("click");
+      } else {
+        result = "Dealer wins.";
+        showLossPop(twentyoneBet);
+        playSound("crash");
+      }
+
+      twentyoneRunning = false;
+      saveLocal();
+      renderTop();
+      renderTwentyOne();
+      els.twentyoneResultText.textContent = result;
+      await saveCloud().catch(err => console.warn("21 save failed:", err));
+      publishLeaderboardProfileInBackground();
+    }
+
+    
+    function showLossPop(amount){
+      const pop = els.twentyoneCashPop || els.cashPop;
+      if(!pop) return;
+      pop.innerHTML = `<div style="color:#ff5c8a;font-size:1.8rem;">-${money(Math.abs(amount))}</div>`;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(()=>pop.classList.add("hidden"),1500);
+    }
+function showTwentyOneCashPop(amount) {
+      const pop = els.twentyoneCashPop || els.cashPop;
+      if (!pop) return;
+      pop.innerHTML = `
+        <div style="font-size:1.25rem;">21 WIN!</div>
+        <div style="font-size:1.9rem;">You won ${money(amount)}!</div>
+      `;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(() => pop.classList.add("hidden"), 1700);
+    }
+
+
+    let safeRunning = false;
+    let safeBet = 25;
+    let safeRound = 0;
+    let safeBomb = 0;
+
+    const safeSettings = {
+      easy: {
+        label: "Easy",
+        choices: 6,
+        multipliers: [0.25, 0.45, 0.7, 1.0, 1.35, 1.75, 2.25, 3.0, 4.0, 5.5, 7.5, 10.0, 15.0, 25.0, 50.0]
+      },
+      medium: {
+        label: "Medium",
+        choices: 4,
+        multipliers: [1.0, 1.1, 1.2, 1.3, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0, 3.5, 4.0, 5.0, 7.5, 10.0, 15.0, 25.0, 50.0, 100.0]
+      },
+      hard: {
+        label: "Hard",
+        choices: 3,
+        multipliers: [1.0, 1.15, 1.35, 1.6, 2.0, 2.6, 3.4, 4.5, 6.0, 8.5, 12.0, 18.0, 28.0, 45.0, 75.0, 125.0, 250.0, 500.0, 1000.0]
+      }
+    };
+
+    function getSafeSetting() {
+      return safeSettings[els.safeMode.value] || safeSettings.medium;
+    }
+
+    function getSafeBet() {
+      const v = Math.floor(Number(els.safeBetInput.value || 1));
+      return Math.max(1, Math.min(999999999, v));
+    }
+
+    function currentSafeMultiplier() {
+      const setting = getSafeSetting();
+      if (safeRound <= 0) return setting.multipliers[0];
+      return setting.multipliers[Math.min(safeRound - 1, setting.multipliers.length - 1)];
+    }
+
+    function currentSafeWin() {
+      const mult = currentSafeMultiplier();
+      return Math.floor(safeBet * Math.max(0, mult) * Number(state.rebirthMultiplier || 1));
+    }
+
+    function renderSafeCracker() {
+      const setting = getSafeSetting();
+
+      els.safeBetStat.textContent = money(safeRunning ? safeBet : getSafeBet());
+      els.safeModeStat.textContent = setting.label;
+      els.safeRoundStat.textContent = String(safeRound);
+      els.safeMultStat.textContent = currentSafeMultiplier().toFixed(2) + "x";
+
+      els.safeStartBtn.disabled = safeRunning;
+      els.safeSideStartBtn.disabled = safeRunning;
+      els.safeCashoutBtn.disabled = !safeRunning || safeRound === 0 || currentSafeWin() <= 0;
+      els.safeSideCashoutBtn.disabled = !safeRunning || safeRound === 0 || currentSafeWin() <= 0;
+
+      renderSafeButtons(setting.choices);
+
+      els.safeMultiplierTrack.innerHTML = setting.multipliers.slice(0, 15).map((m, i) => `
+        <span class="mult-chip ${i < safeRound ? "hit" : ""}">${m.toFixed(2)}x</span>
+      `).join("");
+    }
+
+    function renderSafeButtons(count) {
+      els.safeButtons.innerHTML = "";
+      els.safeButtons.classList.remove("safe-count-3", "safe-count-4", "safe-count-6");
+      els.safeButtons.classList.add(`safe-count-${count}`);
+
+      for (let i = 1; i <= count; i++) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "safe-code-btn";
+        btn.textContent = i;
+        btn.disabled = !safeRunning;
+        btn.addEventListener("click", () => pickSafeCode(i));
+        els.safeButtons.appendChild(btn);
+      }
+    }
+
+    async function startSafeCracker() {
+      if (!currentUser) {
+        switchPage("account");
+        toast("You need to create an account or log in before playing.", true);
+        return;
+      }
+      if (safeRunning) return;
+
+      safeBet = getSafeBet();
+      if (safeBet > state.balance) {
+        toast("Not enough balance for that Safe Cracker bet.", true);
+        return;
+      }
+
+      state.balance -= safeBet;
+      safeRunning = true;
+      safeRound = 0;
+      safeVault.textContent = "🔐";
+      safeResultText.textContent = "Pick a number. One is a bomb, the rest are safe.";
+      chooseSafeBomb();
+
+      saveLocal();
+      renderTop();
+      renderSafeCracker();
+      playSound("click");
+      saveCloud().catch(err => console.warn("Safe Cracker start save failed:", err));
+    }
+
+    function chooseSafeBomb() {
+      const choices = getSafeSetting().choices;
+      safeBomb = Math.floor(Math.random() * choices) + 1;
+    }
+
+    async function pickSafeCode(n) {
+      if (!safeRunning) return;
+
+      const buttons = Array.from(els.safeButtons.children);
+      buttons.forEach(b => b.disabled = true);
+
+      if (n !== safeBomb) {
+        safeRound += 1;
+        safeVault.textContent = "🔓";
+        buttons[n - 1]?.classList.add("safe-good");
+
+        showSafeRoundPop(`Safe! ${currentSafeMultiplier().toFixed(2)}x`, true);
+        els.safeResultText.textContent = "Safe pick. Cash out or keep cracking.";
+        playSound("eat");
+
+        setTimeout(() => {
+          if (!safeRunning) return;
+          safeVault.textContent = "🔐";
+          chooseSafeBomb();
+          renderSafeCracker();
+        }, 850);
+      } else {
+        buttons[n - 1]?.classList.add("safe-bad");
+        safeRunning = false;
+        safeVault.textContent = "💥";
+        els.safeResultText.textContent = "Bomb! You lost the bet.";
+
+        showSafeLossPop(safeBet);
+        playSound("crash");
+        renderSafeCracker();
+
+        await saveCloud().catch(err => console.warn("Safe Cracker loss save failed:", err));
+      }
+    }
+
+    async function cashoutSafeCracker() {
+      if (!safeRunning || safeRound === 0) return;
+
+      safeRunning = false;
+      const win = currentSafeWin();
+
+      state.balance = Number(state.balance || 0) + win;
+      state.bestRun = Math.max(Number(state.bestRun || 0), win);
+
+      saveLocal();
+      renderTop();
+      renderSafeCracker();
+
+      showSafeCashPop(win);
+      launchConfetti();
+      playSound("cashout");
+      els.safeVault.textContent = "💰";
+      els.safeResultText.textContent = `Cashed out after ${safeRound} rounds.`;
+
+      try {
+        await saveCloud();
+        await addDoc(collection(db, "cashLeaderboard"), {
+          username: emailName(state.email || currentUser?.email || ""),
+          displayName: emailName(state.email || currentUser?.email || ""),
+          email: state.email || currentUser?.email || "",
+          game: "Safe Cracker",
+          cash: win,
+          createdAt: serverTimestamp()
+        });
+        publishLeaderboardProfileInBackground();
+      } catch (e) {
+        console.error("Safe Cracker cashout save failed:", e);
+      }
+    }
+
+    function showSafeRoundPop(text, good) {
+      const pop = document.createElement("div");
+      pop.className = "safe-round-pop";
+      pop.textContent = text;
+      pop.style.color = good ? "#51ff9a" : "#ff5c8a";
+      els.safeButtons.appendChild(pop);
+      setTimeout(() => pop.remove(), 1100);
+    }
+
+    function showSafeLossPop(amount) {
+      const pop = els.safeCashPop || els.cashPop;
+      if (!pop) return;
+      pop.innerHTML = `
+        <div style="font-size:1.25rem;color:#ff5c8a;">BOMB HIT!</div>
+        <div style="font-size:1.9rem;color:#ff5c8a;">-${money(amount)}</div>
+      `;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(() => pop.classList.add("hidden"), 1700);
+    }
+
+    function showSafeCashPop(amount) {
+      const pop = els.safeCashPop || els.cashPop;
+      if (!pop) return;
+      pop.innerHTML = `
+        <div style="font-size:1.25rem;color:#51ff9a;">SAFE CRACKED!</div>
+        <div style="font-size:1.9rem;color:#51ff9a;">+${money(amount)}</div>
+      `;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(() => pop.classList.add("hidden"), 1700);
+    }
+
+    els.startBtn.addEventListener("click", startRun);
+    els.boardStartBtn.addEventListener("click", startRun);
+    els.overlayStart.addEventListener("click", () => paused ? togglePause() : startRun());
+    els.cashoutBtn.addEventListener("click", cashout);
+    els.boardCashoutBtn.addEventListener("click", cashout);
+    els.pauseBtn.addEventListener("click", togglePause);
+
+    els.safeStartBtn.addEventListener("click", startSafeCracker);
+    els.safeSideStartBtn.addEventListener("click", startSafeCracker);
+    els.safeCashoutBtn.addEventListener("click", cashoutSafeCracker);
+    els.safeSideCashoutBtn.addEventListener("click", cashoutSafeCracker);
+    els.safeBetInput.addEventListener("input", renderSafeCracker);
+    els.safeMode.addEventListener("change", () => {
+      safeRunning = false;
+      safeRound = 0;
+      renderSafeCracker();
+    });
+
+
+    els.twentyoneStartBtn.addEventListener("click", startTwentyOne);
+    els.twentyoneSideStartBtn.addEventListener("click", startTwentyOne);
+    els.twentyoneHitBtn.addEventListener("click", hitTwentyOne);
+    els.twentyoneStandBtn.addEventListener("click", standTwentyOne);
+    els.twentyoneBetInput.addEventListener("input", renderTwentyOne);
+
+
+    els.diceRollBtn.addEventListener("click", rollDiceGame);
+    els.diceSideRollBtn.addEventListener("click", rollDiceGame);
+    els.diceBetInput.addEventListener("input", renderDice);
+    els.diceUnderBtn.addEventListener("click", () => { diceMode = "under"; renderDice(); });
+    els.diceOverBtn.addEventListener("click", () => { diceMode = "over"; renderDice(); });
+
+
+    els.hiloStartBtn.addEventListener("click", startHiLo);
+    els.hiloSideStartBtn.addEventListener("click", startHiLo);
+    els.hiloCashoutBtn.addEventListener("click", cashoutHiLo);
+    els.hiloSideCashoutBtn.addEventListener("click", cashoutHiLo);
+    els.hiloHigherBtn.addEventListener("click", () => guessHiLo("higher"));
+    els.hiloLowerBtn.addEventListener("click", () => guessHiLo("lower"));
+    els.hiloBetInput.addEventListener("input", renderHiLo);
+
+
+    els.slotsStartBtn.addEventListener("click", startSlots);
+    els.slotsSideStartBtn.addEventListener("click", startSlots);
+    els.slotsStopBtn.addEventListener("click", stopSlots);
+    els.slotsSideStopBtn.addEventListener("click", stopSlots);
+    els.slotsBetInput.addEventListener("input", renderSlots);
+    els.slotsMode.addEventListener("change", renderSlots);
+
+
+    document.querySelectorAll(".game-tile[data-game]").forEach(btn => {
+      btn.addEventListener("click", () => switchGame(btn.dataset.game));
+    });
+    els.minesStartBtn.addEventListener("click", startMines);
+    els.minesSideStartBtn.addEventListener("click", startMines);
+    els.minesCashoutBtn.addEventListener("click", cashoutMines);
+    els.minesSideCashoutBtn.addEventListener("click", cashoutMines);
+    els.minesBetInput.addEventListener("input", renderMines);
+    els.minesMode.addEventListener("change", () => {
+      minesRunning = false;
+      minesBombs = [];
+      minesRevealed = new Set();
+      buildMinesBoard();
+      renderMines();
+    });
+
+    els.resetBtn.addEventListener("click", () => {
+      location.reload();
+    });
+    if (els.playerName) els.playerName.addEventListener("change", async () => { state.username = (els.playerName.value || "Guest").slice(0, 18); await saveCloud(); renderTop(); });
+    els.betInput.addEventListener("input", renderStats);
+    els.riskMode.addEventListener("change", () => {
+      running = false;
+      paused = false;
+      clearTimeout(gameTimer);
+      showOverlay("Mode Changed", "Board size and speed updated. Start a new run.", "Start Run");
+      resetSnakeVisual();
+    });
+    document.getElementById("createAccountBtn").addEventListener("click", createAccount);
+    document.getElementById("loginBtn").addEventListener("click", loginAccount);
+    document.getElementById("signOutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      currentUser = null;
+      state = { ...defaultState };
+      saveLocal();
+      renderAll();
+      resetSnakeVisual();
+      switchPage("account");
+    });
+    document.getElementById("rebirthBtn").addEventListener("click", rebirth);
+    document.getElementById("refreshLeaderboardBtn").addEventListener("click", renderLeaderboards);
+    document.getElementById("adminLoginBtn")?.addEventListener("click", renderAdminVisibility);
+    document.getElementById("addFundsBtn")?.addEventListener("click", async () => { state.balance += 500; await saveCloud(); renderAll(); renderLeaderboards(); });
+    document.getElementById("setBalanceBtn")?.addEventListener("click", async () => { state.balance = 10000; state.startingBalance = 10000; await saveCloud(); renderAll(); renderLeaderboards(); });
+    document.getElementById("unlockAllSkinsBtn")?.addEventListener("click", async () => {
+      state.ownedSkins = Object.keys(skins);
+      state.ownedAppleSkins = Object.keys(appleSkins);
+      state.ownedBoardThemes = Object.keys(boardThemes);
+      state.ownedTitles = Object.keys(titles);
+      state.ownedIcons = Object.keys(profileIcons);
+      await saveCloud(); renderAll();
+    });
+    document.getElementById("lockSkinsBtn")?.addEventListener("click", async () => {
+      state.ownedSkins = ["neon"]; state.ownedAppleSkins = ["classic"]; state.ownedBoardThemes = ["default"]; state.ownedTitles = []; state.ownedIcons = ["default"];
+      state.ownedMinesTiles = ["neonmine"];
+      state.ownedMinesGems = ["classicgem"];
+      state.ownedMinesItems = [];
+      state.equippedMinesTile = "neonmine";
+      state.equippedMinesGem = "classicgem";
+      state.equippedSnakeSkin = "neon"; state.equippedAppleSkin = "classic"; state.equippedBoardTheme = "default"; state.equippedTitle = ""; state.equippedIcon = "default";
+      await saveCloud(); renderAll(); draw();
+    });
+    document.getElementById("clearLocalBtn")?.addEventListener("click", () => { localStorage.removeItem(LOCAL_KEY); location.reload(); });
+    document.getElementById("refreshUsersBtn")?.addEventListener("click", loadAdminUsers);
+    document.getElementById("adminAdd500Btn")?.addEventListener("click", () => adminUpdateUserBalance("add", 500));
+    document.getElementById("adminAdd10000Btn")?.addEventListener("click", () => adminUpdateUserBalance("add", 10000));
+    document.getElementById("adminSet10000Btn")?.addEventListener("click", () => adminUpdateUserBalance("set", 10000));
+    document.getElementById("adminResetPickedBtn")?.addEventListener("click", adminResetPickedUser);
+    document.getElementById("adminAddEveryoneBtn")?.addEventListener("click", () => adminAddEveryone(500));
+
+    document.getElementById("adminAddCustomBtn")?.addEventListener("click", () => {
+      const amount = Number(document.getElementById("adminCustomAmount")?.value || 0);
+      adminUpdateUserBalance("add", amount);
+    });
+    document.getElementById("adminSetCustomBtn")?.addEventListener("click", () => {
+      const amount = Number(document.getElementById("adminCustomAmount")?.value || 0);
+      adminUpdateUserBalance("set", amount);
+    });
+    document.getElementById("adminWipeAllBtn")?.addEventListener("click", adminWipeAllUsers);
+
+    document.getElementById("resetUserBtn")?.addEventListener("click", async () => { state = { ...defaultState, uid: currentUser?.uid || null, email: currentUser?.email || "", username: state.username }; await saveCloud(); renderAll(); resetSnakeVisual(); });
+    onAuthStateChanged(auth, async user => {
+      authReady = true;
+      if (user) {
+        await loadUserFromCloud(user, false);
+      } else {
+        currentUser = null;
+        loadingCloud = false;
+        state = { ...defaultState };
+        saveLocal();
+        renderAll();
+        resetSnakeVisual();
+        if (typeof buildMinesBoard === "function") buildMinesBoard();
+        if (typeof renderMines === "function") renderMines();
+      }
+    });
+    renderAll();
+    resetSnakeVisual();
+    buildMinesBoard();
+    renderMines();
+  </script>
+
+  <footer class="site-footer">
+    <span>Made By Koby Webster</span>
+    <span>EST 2026</span>
+  </footer>
+
+</body>
+</html>
