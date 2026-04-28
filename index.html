@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Webster's Game</title>
+  <title>The Ante</title>
   <style>
     :root {
       --bg: #070816;
@@ -1671,25 +1671,29 @@ function canAfford(amount){
     }
 
     function showNoMoneyPop() {
-      const target =
-        els.cashPop ||
-        els.minesCashPop ||
-        els.hiloCashPop ||
-        els.diceCashPop ||
-        els.twentyoneCashPop ||
-        els.safeCashPop;
+      const popMap = {
+        snake: els.cashPop,
+        mines: els.minesCashPop,
+        slots: els.slotsCashPop,
+        hilo: els.hiloCashPop,
+        dice: els.diceCashPop,
+        twentyone: els.twentyoneCashPop,
+        safecracker: els.safeCashPop
+      };
+
+      const target = popMap[activeGame] || els.cashPop;
 
       if (target) {
         target.innerHTML = `
-          <div style="font-size:1.2rem;color:#ff5c8a;">NO MONEY LEFT</div>
-          <div style="font-size:1.55rem;color:#ff5c8a;">You need cash to play.</div>
+          <div style="font-size:1.25rem;color:#ff5c8a;">NOT ENOUGH MONEY</div>
+          <div style="font-size:1.45rem;color:#ffb3c2;">Head to the shop for a free $100.</div>
         `;
         target.classList.remove("hidden");
         void target.offsetWidth;
-        setTimeout(() => target.classList.add("hidden"), 1600);
+        setTimeout(() => target.classList.add("hidden"), 1800);
       }
 
-      toast("No money left. You need cash to play.", true);
+      toast("Not enough money. Head to the shop for a free $100.", true);
     }
 
     function clampBalance() {
