@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Ante</title>
+  <title>Webster's Game</title>
   <style>
     :root {
       --bg: #070816;
@@ -527,6 +527,65 @@
 
 
 
+
+    .rollbattle-table {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(109,247,255,0.15), rgba(255,209,102,0.12), rgba(157,109,255,0.18));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 42px rgba(109,247,255,0.12);
+      text-align: center;
+    }
+    .rollbattle-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .roll-card {
+      border-radius: 22px;
+      padding: 18px 12px;
+      background: rgba(7,16,38,0.76);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: inset 0 0 28px rgba(109,247,255,0.08);
+    }
+    .roll-card h3 {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .roll-number {
+      font-size: clamp(3rem, 11vw, 6.5rem);
+      font-weight: 950;
+      line-height: 1;
+      color: var(--text);
+      text-shadow: 0 0 28px rgba(109,247,255,0.35);
+      font-variant-numeric: tabular-nums;
+    }
+    .roll-number.spinning {
+      animation: rollNumberPulse 170ms linear infinite;
+    }
+    @keyframes rollNumberPulse {
+      0% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.035); filter: brightness(1.25); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+    .rollbattle-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .rollbattle-result {
+      min-height: 24px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
     .safecracker-table {
       max-width: 620px;
       margin: 0 auto;
@@ -887,6 +946,7 @@
             <button class="game-tile" data-game="dice"><strong>🎯 Dice</strong></button>
             <button class="game-tile" data-game="twentyone"><strong>🃏 21</strong></button>
             <button class="game-tile" data-game="safecracker"><strong>🔐 Safe Cracker</strong></button>
+            <button class="game-tile" data-game="rollbattle"><strong>🎲 Roll Battle</strong></button>
             <button class="game-tile future" disabled><strong>Crash</strong></button>
             <button class="game-tile future" disabled><strong>Roulette</strong></button>
           </div>
@@ -1079,6 +1139,41 @@
           <div class="multiplier-track" id="safeMultiplierTrack"></div>
         </section>
 
+        <section class="card arena mines-hidden" id="rollbattleArenaCard">
+          <div class="game-topbar">
+            <div class="mini-stat"><span class="label">Bet</span><b id="rollBetStat">$25</b></div>
+            <div class="mini-stat"><span class="label">Round</span><b id="rollRoundStat">0</b></div>
+            <div class="mini-stat"><span class="label">Multiplier</span><b id="rollMultStat">1.00x</b></div>
+            <div class="mini-stat"><span class="label">Potential</span><b id="rollPotentialStat">$0</b></div>
+          </div>
+
+          <div style="position:relative;">
+            <div class="rollbattle-table">
+              <div class="rollbattle-grid">
+                <div class="roll-card">
+                  <h3>Bot Roll</h3>
+                  <div class="roll-number" id="botRollNumber">--</div>
+                </div>
+                <div class="roll-card">
+                  <h3>Your Roll</h3>
+                  <div class="roll-number" id="playerRollNumber">--</div>
+                </div>
+              </div>
+              <p class="rollbattle-result" id="rollResultText">Start a battle. Beat the bot, then cash out or keep going.</p>
+              <div class="rollbattle-actions">
+                <button id="rollSpinBtn" class="secondary" disabled>Spin</button>
+                <button id="rollCashoutBtn" class="cashout" disabled>Cash Out</button>
+              </div>
+            </div>
+            <div class="cash-pop hidden" id="rollCashPop"></div>
+          </div>
+
+          <div class="board-action-row">
+            <button id="rollStartBtn">Start Roll Battle</button>
+          </div>
+          <div class="multiplier-track" id="rollMultiplierTrack"></div>
+        </section>
+
         <aside class="right-col">
           <section class="card">
             <div class="card-head"><h2>Run Panel</h2><span class="label">WASD / Arrows</span></div>
@@ -1152,7 +1247,14 @@
 
 
 
-            </div>
+            
+              <div id="rollControlBox" class="mines-hidden" style="display:flex;flex-direction:column;gap:12px;">
+                <label><span class="label">Bet Amount</span><input id="rollBetInput" type="number" min="1" step="1" value="25" /></label>
+                <button id="rollSideStartBtn">Start Roll Battle</button>
+                <button id="rollSideSpinBtn" class="secondary" disabled>Spin</button>
+                <button id="rollSideCashoutBtn" class="cashout" disabled>Cash Out</button>
+              </div>
+</div>
           </section>
         </aside>
       </div>
@@ -1584,7 +1686,25 @@
       safeMode: document.getElementById("safeMode"),
       safeSideStartBtn: document.getElementById("safeSideStartBtn"),
       safeSideCashoutBtn: document.getElementById("safeSideCashoutBtn"),
-      safeControlBox: document.getElementById("safeControlBox")
+      safeControlBox: document.getElementById("safeControlBox"),
+      rollbattleArenaCard: document.getElementById("rollbattleArenaCard"),
+      rollBetStat: document.getElementById("rollBetStat"),
+      rollRoundStat: document.getElementById("rollRoundStat"),
+      rollMultStat: document.getElementById("rollMultStat"),
+      rollPotentialStat: document.getElementById("rollPotentialStat"),
+      botRollNumber: document.getElementById("botRollNumber"),
+      playerRollNumber: document.getElementById("playerRollNumber"),
+      rollResultText: document.getElementById("rollResultText"),
+      rollSpinBtn: document.getElementById("rollSpinBtn"),
+      rollCashoutBtn: document.getElementById("rollCashoutBtn"),
+      rollStartBtn: document.getElementById("rollStartBtn"),
+      rollCashPop: document.getElementById("rollCashPop"),
+      rollMultiplierTrack: document.getElementById("rollMultiplierTrack"),
+      rollBetInput: document.getElementById("rollBetInput"),
+      rollSideStartBtn: document.getElementById("rollSideStartBtn"),
+      rollSideSpinBtn: document.getElementById("rollSideSpinBtn"),
+      rollSideCashoutBtn: document.getElementById("rollSideCashoutBtn"),
+      rollControlBox: document.getElementById("rollControlBox")
     };
     let snake, dir, nextDir, apple, score, activeBet, multiplier, gameTimer, running, paused, speedMs, particles = [];
     const curves = {
@@ -1678,7 +1798,8 @@ function canAfford(amount){
         hilo: els.hiloCashPop,
         dice: els.diceCashPop,
         twentyone: els.twentyoneCashPop,
-        safecracker: els.safeCashPop
+        safecracker: els.safeCashPop,
+        rollbattle: els.rollCashPop
       };
 
       const target = popMap[activeGame] || els.cashPop;
@@ -2273,6 +2394,7 @@ function canAfford(amount){
       const diceActive = game === "dice";
       const twentyoneActive = game === "twentyone";
       const safeActive = game === "safecracker";
+      const rollActive = game === "rollbattle";
 
       els.arenaCard.classList.toggle("mines-hidden", !snakeActive);
       els.minesArenaCard.classList.toggle("mines-hidden", !minesActive);
@@ -2281,10 +2403,11 @@ function canAfford(amount){
       els.diceArenaCard.classList.toggle("mines-hidden", !diceActive);
       els.twentyoneArenaCard.classList.toggle("mines-hidden", !twentyoneActive);
       els.safecrackerArenaCard.classList.toggle("mines-hidden", !safeActive);
+      els.rollbattleArenaCard.classList.toggle("mines-hidden", !rollActive);
 
       const controlChildren = Array.from(els.startBtn.closest(".card-body").children);
       controlChildren.forEach(child => {
-        if (child.id !== "minesControlBox" && child.id !== "slotsControlBox" && child.id !== "hiloControlBox" && child.id !== "diceControlBox" && child.id !== "twentyoneControlBox" && child.id !== "safeControlBox") {
+        if (child.id !== "minesControlBox" && child.id !== "slotsControlBox" && child.id !== "hiloControlBox" && child.id !== "diceControlBox" && child.id !== "twentyoneControlBox" && child.id !== "safeControlBox" && child.id !== "rollControlBox") {
           child.classList.toggle("mines-hidden", !snakeActive);
         }
       });
@@ -2295,6 +2418,7 @@ function canAfford(amount){
       els.diceControlBox.classList.toggle("mines-hidden", !diceActive);
       els.twentyoneControlBox.classList.toggle("mines-hidden", !twentyoneActive);
       els.safeControlBox.classList.toggle("mines-hidden", !safeActive);
+      els.rollControlBox.classList.toggle("mines-hidden", !rollActive);
 
       if (game === "mines") renderMines();
       else if (game === "slots") renderSlots();
@@ -2302,6 +2426,7 @@ function canAfford(amount){
       else if (game === "dice") renderDice();
       else if (game === "twentyone") renderTwentyOne();
       else if (game === "safecracker") renderSafeCracker();
+      else if (game === "rollbattle") renderRollBattle();
       else renderStats();
     }
 
@@ -3953,6 +4078,7 @@ function showTwentyOneCashPop(amount) {
       saveLocal();
       renderTop();
       renderSafeCracker();
+    renderRollBattle();
       playSound("click");
       saveCloud().catch(err => console.warn("Safe Cracker start save failed:", err));
     }
@@ -4065,12 +4191,197 @@ function showTwentyOneCashPop(amount) {
       setTimeout(() => pop.classList.add("hidden"), 1700);
     }
 
+
+    let rollRunning = false;
+    let rollCanSpin = false;
+    let rollBet = 25;
+    let rollRound = 0;
+    let botRoll = 0;
+    let playerRoll = 0;
+    let rollSpinTimer = null;
+
+    const rollCurve = [1.0, 1.15, 1.35, 1.6, 2.0, 2.5, 3.2, 4.2, 5.5, 7.5, 10.0, 15.0, 25.0, 50.0, 100.0];
+
+    function getRollBet() {
+      const v = Math.floor(Number(els.rollBetInput.value || 1));
+      return Math.max(1, Math.min(999999999, v));
+    }
+
+    function currentRollMultiplier() {
+      if (rollRound <= 0) return 1.0;
+      return rollCurve[Math.min(rollRound - 1, rollCurve.length - 1)] || rollCurve[rollCurve.length - 1];
+    }
+
+    function currentRollWin() {
+      return Math.max(1, Math.floor(rollBet * currentRollMultiplier() * Number(state.rebirthMultiplier || 1)));
+    }
+
+    function renderRollBattle() {
+      els.rollBetStat.textContent = money(rollRunning ? rollBet : getRollBet());
+      els.rollRoundStat.textContent = String(rollRound);
+      els.rollMultStat.textContent = currentRollMultiplier().toFixed(2) + "x";
+      els.rollPotentialStat.textContent = rollRunning && rollRound > 0 ? money(currentRollWin()) : "$0";
+      els.rollStartBtn.disabled = rollRunning;
+      els.rollSideStartBtn.disabled = rollRunning;
+      els.rollSpinBtn.disabled = !rollRunning || !rollCanSpin;
+      els.rollSideSpinBtn.disabled = !rollRunning || !rollCanSpin;
+      els.rollCashoutBtn.disabled = !rollRunning || rollRound === 0;
+      els.rollSideCashoutBtn.disabled = !rollRunning || rollRound === 0;
+      els.botRollNumber.textContent = botRoll ? String(botRoll) : "--";
+      els.playerRollNumber.textContent = playerRoll ? String(playerRoll) : "--";
+      els.rollMultiplierTrack.innerHTML = rollCurve.slice(0, 12).map((m, i) => `<span class="mult-chip ${i < rollRound ? "hit" : ""}">${m.toFixed(2)}x</span>`).join("");
+    }
+
+    async function startRollBattle() {
+      if (!currentUser) {
+        switchPage("account");
+        toast("You need to create an account or log in before playing.", true);
+        return;
+      }
+      rollBet = getRollBet();
+      if (!chargeBet(rollBet)) return;
+      rollRunning = true;
+      rollCanSpin = true;
+      rollRound = 0;
+      botRoll = randomRollBattleNumber();
+      playerRoll = 0;
+      saveLocal();
+      renderTop();
+      renderRollBattle();
+      playSound("click");
+      els.rollResultText.textContent = "Bot rolled first. Spin to beat it.";
+      saveCloud().catch(err => console.warn("Roll Battle start save failed:", err));
+    }
+
+    function randomRollBattleNumber() {
+      return Math.floor(Math.random() * 100) + 1;
+    }
+
+    function spinPlayerRollVisual(finalRoll, done) {
+      let ticks = 0;
+      els.playerRollNumber.classList.add("spinning");
+      if (rollSpinTimer) clearInterval(rollSpinTimer);
+      rollSpinTimer = setInterval(() => {
+        ticks++;
+        els.playerRollNumber.textContent = String(randomRollBattleNumber());
+        if (ticks >= 18) {
+          clearInterval(rollSpinTimer);
+          rollSpinTimer = null;
+          els.playerRollNumber.classList.remove("spinning");
+          els.playerRollNumber.textContent = String(finalRoll);
+          done();
+        }
+      }, 55);
+    }
+
+    async function spinRollBattle() {
+      if (!rollRunning || !rollCanSpin) return;
+      rollCanSpin = false;
+      playerRoll = 0;
+      renderRollBattle();
+      playSound("click");
+      const finalRoll = randomRollBattleNumber();
+
+      spinPlayerRollVisual(finalRoll, async () => {
+        playerRoll = finalRoll;
+        if (playerRoll > botRoll) {
+          rollRound += 1;
+          const mult = currentRollMultiplier();
+          showRollRoundPop(`${mult.toFixed(2)}x`, true);
+          els.rollResultText.textContent = `You rolled ${playerRoll}. Bot had ${botRoll}. Cash out or continue.`;
+          playSound("eat");
+          botRoll = randomRollBattleNumber();
+          rollCanSpin = true;
+          setTimeout(() => {
+            if (!rollRunning) return;
+            playerRoll = 0;
+            els.rollResultText.textContent = "Bot rolled again. Spin to beat it.";
+            renderRollBattle();
+          }, 850);
+        } else {
+          rollRunning = false;
+          rollCanSpin = false;
+          els.rollResultText.textContent = `You rolled ${playerRoll}. Bot had ${botRoll}. You lost.`;
+          showRollLossPop(rollBet);
+          playSound("crash");
+          await saveCloud().catch(err => console.warn("Roll Battle loss save failed:", err));
+        }
+        renderRollBattle();
+      });
+    }
+
+    async function cashoutRollBattle() {
+      if (!rollRunning || rollRound === 0) return;
+      rollRunning = false;
+      rollCanSpin = false;
+      const win = currentRollWin();
+      state.balance = Number(state.balance || 0) + win;
+      state.bestRun = Math.max(Number(state.bestRun || 0), win);
+      saveLocal();
+      renderTop();
+      renderRollBattle();
+      showRollCashPop(win);
+      launchConfetti();
+      playSound("cashout");
+      els.rollResultText.textContent = `Cashed out after ${rollRound} wins.`;
+      try {
+        await saveCloud();
+        await addDoc(collection(db, "cashLeaderboard"), {
+          username: emailName(state.email || currentUser?.email || ""),
+          displayName: emailName(state.email || currentUser?.email || ""),
+          email: state.email || currentUser?.email || "",
+          game: "Roll Battle",
+          cash: win,
+          createdAt: serverTimestamp()
+        });
+        publishLeaderboardProfileInBackground();
+      } catch (e) {
+        console.error("Roll Battle cashout save failed:", e);
+      }
+    }
+
+    function showRollRoundPop(text, good) {
+      const pop = document.createElement("div");
+      pop.className = "safe-round-pop";
+      pop.textContent = text;
+      pop.style.color = good ? "#51ff9a" : "#ff5c8a";
+      els.rollbattleArenaCard.appendChild(pop);
+      setTimeout(() => pop.remove(), 1100);
+    }
+
+    function showRollCashPop(amount) {
+      const pop = els.rollCashPop || els.cashPop;
+      if (!pop) return;
+      pop.innerHTML = `<div style="font-size:1.25rem;color:#51ff9a;">ROLL BATTLE CASHOUT!</div><div style="font-size:1.9rem;color:#51ff9a;">+${money(amount)}</div>`;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(() => pop.classList.add("hidden"), 1700);
+    }
+
+    function showRollLossPop(amount) {
+      const pop = els.rollCashPop || els.cashPop;
+      if (!pop) return;
+      pop.innerHTML = `<div style="font-size:1.25rem;color:#ff5c8a;">ROLL BATTLE LOST</div><div style="font-size:1.9rem;color:#ff5c8a;">-${money(Math.abs(amount))}</div>`;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(() => pop.classList.add("hidden"), 1700);
+    }
+
     els.startBtn.addEventListener("click", startRun);
     els.boardStartBtn.addEventListener("click", startRun);
     els.overlayStart.addEventListener("click", () => paused ? togglePause() : startRun());
     els.cashoutBtn.addEventListener("click", cashout);
     els.boardCashoutBtn.addEventListener("click", cashout);
     els.pauseBtn.addEventListener("click", togglePause);
+
+    els.rollStartBtn.addEventListener("click", startRollBattle);
+    els.rollSideStartBtn.addEventListener("click", startRollBattle);
+    els.rollSpinBtn.addEventListener("click", spinRollBattle);
+    els.rollSideSpinBtn.addEventListener("click", spinRollBattle);
+    els.rollCashoutBtn.addEventListener("click", cashoutRollBattle);
+    els.rollSideCashoutBtn.addEventListener("click", cashoutRollBattle);
+    els.rollBetInput.addEventListener("input", renderRollBattle);
+
 
     els.safeStartBtn.addEventListener("click", startSafeCracker);
     els.safeSideStartBtn.addEventListener("click", startSafeCracker);
