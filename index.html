@@ -813,6 +813,66 @@
 
     .highcard-card.red { color: #d7263d; }
 
+
+    .holdem-table {
+      max-width: 660px;
+      margin: 0 auto;
+      padding: 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(81,255,154,0.14), rgba(109,247,255,0.16), rgba(157,109,255,0.16));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 42px rgba(109,247,255,0.12);
+      text-align: center;
+    }
+    .holdem-row { margin-bottom: 14px; }
+    .holdem-row h3 {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .holdem-cards {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      min-height: 92px;
+      align-items: center;
+    }
+    .holdem-card {
+      width: 64px;
+      aspect-ratio: 3 / 4;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, rgba(255,255,255,0.97), rgba(210,232,255,0.92));
+      color: #07101b;
+      font-size: 1.55rem;
+      font-weight: 950;
+      box-shadow: 0 12px 34px rgba(0,0,0,0.28);
+      border: 2px solid rgba(255,255,255,0.85);
+      user-select: none;
+    }
+    .holdem-card.red { color: #d7263d; }
+    .holdem-card.hidden-card {
+      color: white;
+      background: linear-gradient(135deg, #111827, #9d6dff);
+    }
+    .holdem-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .holdem-bet-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+      align-items: end;
+    }
+
     .hilo-actions {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -1017,6 +1077,7 @@
             <button class="game-tile" data-game="hilo"><strong>🃏 Hi-Lo</strong></button>
             <button class="game-tile" data-game="dice"><strong>🎯 Dice</strong></button>
             <button class="game-tile" data-game="twentyone"><strong>🃏 21</strong></button>
+            <button class="game-tile" data-game="holdem"><strong>♣️ Hold'em Duel</strong></button>
             <button class="game-tile" data-game="safecracker"><strong>🔐 Safe Cracker</strong></button>
             <button class="game-tile" data-game="rollbattle"><strong>🎲 Roll Battle</strong></button>
  <button class="game-tile" data-game="perfectstop"><strong>🎯 Perfect Stop</strong></button>
@@ -1190,6 +1251,50 @@
           </div>
         </section>
 
+
+
+        <section class="card arena mines-hidden" id="holdemArenaCard">
+          <div class="game-topbar">
+            <div class="mini-stat"><span class="label">Ante</span><b id="holdemAnteStat">$25</b></div>
+            <div class="mini-stat"><span class="label">Pot</span><b id="holdemPotStat">$0</b></div>
+            <div class="mini-stat"><span class="label">Cards</span><b id="holdemStreetStat">0 / 5</b></div>
+            <div class="mini-stat"><span class="label">Max Put In</span><b id="holdemMaxStat">$25</b></div>
+          </div>
+
+          <div style="position:relative;">
+            <div class="holdem-table">
+              <div class="holdem-row">
+                <h3>Dealer</h3>
+                <div class="holdem-cards" id="holdemDealerCards"></div>
+              </div>
+              <div class="holdem-row">
+                <h3>Board</h3>
+                <div class="holdem-cards" id="holdemBoardCards"></div>
+              </div>
+              <div class="holdem-row">
+                <h3>You</h3>
+                <div class="holdem-cards" id="holdemPlayerCards"></div>
+              </div>
+              <p class="hilo-result" id="holdemResultText">Deal a hand. Dealer cards stay hidden until Show.</p>
+              <div class="holdem-bet-row">
+                <label><span class="label">Put In Amount</span><input id="holdemPutInput" type="number" min="1" step="1" value="25" /></label>
+                <div class="hint" id="holdemHelpText">Max put in each card = your ante.</div>
+              </div>
+              <div class="holdem-actions">
+                <button id="holdemCheckBtn" class="secondary" disabled>Check</button>
+                <button id="holdemPutBtn" class="secondary" disabled>Put In</button>
+                <button id="holdemShowBtn" class="cashout" disabled>Show</button>
+                <button id="holdemFoldBtn" class="danger" disabled>Fold</button>
+              </div>
+            </div>
+            <div class="cash-pop hidden" id="holdemCashPop"></div>
+          </div>
+
+          <div class="board-action-row">
+            <button id="holdemStartBtn">Deal Hold'em</button>
+          </div>
+        </section>
+
         <section class="card arena mines-hidden" id="safecrackerArenaCard">
           <div class="game-topbar">
             <div class="mini-stat"><span class="label">Bet</span><b id="safeBetStat">$25</b></div>
@@ -1356,6 +1461,14 @@
               <div id="twentyoneControlBox" class="mines-hidden" style="display:flex;flex-direction:column;gap:12px;">
                 <label><span class="label">Bet Amount</span><input id="twentyoneBetInput" type="number" min="1" step="1" value="25" /></label>
                 <button id="twentyoneSideStartBtn">Start 21</button>
+              </div>
+
+
+
+              <div id="holdemControlBox" class="mines-hidden" style="display:flex;flex-direction:column;gap:12px;">
+                <label><span class="label">Ante Amount</span><input id="holdemAnteInput" type="number" min="1" step="1" value="25" /></label>
+                <button id="holdemSideStartBtn">Deal Hold'em</button>
+                <button id="holdemSideShowBtn" class="cashout" disabled>Show</button>
               </div>
 
               <div id="safeControlBox" class="mines-hidden" style="display:flex;flex-direction:column;gap:12px;">
@@ -1814,6 +1927,27 @@
       twentyoneBetInput: document.getElementById("twentyoneBetInput"),
       twentyoneSideStartBtn: document.getElementById("twentyoneSideStartBtn"),
       twentyoneControlBox: document.getElementById("twentyoneControlBox"),
+      holdemArenaCard: document.getElementById("holdemArenaCard"),
+      holdemAnteStat: document.getElementById("holdemAnteStat"),
+      holdemPotStat: document.getElementById("holdemPotStat"),
+      holdemStreetStat: document.getElementById("holdemStreetStat"),
+      holdemMaxStat: document.getElementById("holdemMaxStat"),
+      holdemDealerCards: document.getElementById("holdemDealerCards"),
+      holdemBoardCards: document.getElementById("holdemBoardCards"),
+      holdemPlayerCards: document.getElementById("holdemPlayerCards"),
+      holdemResultText: document.getElementById("holdemResultText"),
+      holdemPutInput: document.getElementById("holdemPutInput"),
+      holdemHelpText: document.getElementById("holdemHelpText"),
+      holdemCheckBtn: document.getElementById("holdemCheckBtn"),
+      holdemPutBtn: document.getElementById("holdemPutBtn"),
+      holdemShowBtn: document.getElementById("holdemShowBtn"),
+      holdemFoldBtn: document.getElementById("holdemFoldBtn"),
+      holdemStartBtn: document.getElementById("holdemStartBtn"),
+      holdemCashPop: document.getElementById("holdemCashPop"),
+      holdemAnteInput: document.getElementById("holdemAnteInput"),
+      holdemSideStartBtn: document.getElementById("holdemSideStartBtn"),
+      holdemSideShowBtn: document.getElementById("holdemSideShowBtn"),
+      holdemControlBox: document.getElementById("holdemControlBox"),
       safecrackerArenaCard: document.getElementById("safecrackerArenaCard"),
       safeBetStat: document.getElementById("safeBetStat"),
       safeModeStat: document.getElementById("safeModeStat"),
@@ -1961,7 +2095,8 @@ function canAfford(amount){
  rollbattle: els.rollCashPop,
  perfectstop: els.psCashPop,
  crosspath: els.cpCashPop,
- highcard: els.hcCashPop
+ highcard: els.hcCashPop,
+      holdem: els.holdemCashPop
  };
 
       const target = popMap[activeGame] || els.cashPop;
@@ -2563,6 +2698,7 @@ function canAfford(amount){
  const perfectstopActive = game === "perfectstop";
  const crosspathActive = game === "crosspath";
  const highcardActive = game === "highcard";
+ const holdemActive = game === "holdem";
 
  els.arenaCard.classList.toggle("mines-hidden", !snakeActive);
       els.minesArenaCard.classList.toggle("mines-hidden", !minesActive);
@@ -2575,10 +2711,11 @@ function canAfford(amount){
  els.perfectstopArenaCard.classList.toggle("mines-hidden", !perfectstopActive);
  els.crosspathArenaCard.classList.toggle("mines-hidden", !crosspathActive);
  els.highcardArenaCard.classList.toggle("mines-hidden", !highcardActive);
+ els.holdemArenaCard.classList.toggle("mines-hidden", !holdemActive);
 
       const controlChildren = Array.from(els.startBtn.closest(".card-body").children);
       controlChildren.forEach(child => {
-        if (child.id !== "minesControlBox" && child.id !== "slotsControlBox" && child.id !== "hiloControlBox" && child.id !== "diceControlBox" && child.id !== "twentyoneControlBox" && child.id !== "safeControlBox" && child.id !== "rollControlBox" && child.id !== "perfectstopControlBox" && child.id !== "crosspathControlBox" && child.id !== "highcardControlBox") {
+        if (child.id !== "minesControlBox" && child.id !== "slotsControlBox" && child.id !== "hiloControlBox" && child.id !== "diceControlBox" && child.id !== "twentyoneControlBox" && child.id !== "safeControlBox" && child.id !== "rollControlBox" && child.id !== "perfectstopControlBox" && child.id !== "crosspathControlBox" && child.id !== "highcardControlBox" && child.id !== "holdemControlBox") {
           child.classList.toggle("mines-hidden", !snakeActive);
         }
       });
@@ -2593,6 +2730,7 @@ function canAfford(amount){
  els.perfectstopControlBox.classList.toggle("mines-hidden", !perfectstopActive);
  els.crosspathControlBox.classList.toggle("mines-hidden", !crosspathActive);
  els.highcardControlBox.classList.toggle("mines-hidden", !highcardActive);
+ els.holdemControlBox.classList.toggle("mines-hidden", !holdemActive);
 
       if (game === "mines") renderMines();
       else if (game === "slots") renderSlots();
@@ -2604,6 +2742,7 @@ function canAfford(amount){
  else if (game === "perfectstop") renderPerfectStop();
  else if (game === "crosspath") renderCrossPath();
  else if (game === "highcard") renderHighCard();
+ else if (game === "holdem") renderHoldem();
  else renderStats();
     }
 
@@ -3961,10 +4100,261 @@ function renderAdminVisibility() {
     }
 
 
+    let holdemAnte = 25;
+    let holdemPot = 0;
+    let holdemPlayerPaid = 0;
+    let holdemDeck = [];
+    let holdemPlayer = [];
+    let holdemDealer = [];
+    let holdemBoard = [];
+    let holdemRevealed = 0;
+    let holdemRunning = false;
+    let holdemDealerShown = false;
+
     let hcBet = 25;
     let hcDealerCard = null;
     let hcPlayerCard = null;
     let hcRoundActive = false;
+
+
+    function getHoldemAnte() {
+      const v = Math.floor(Number(els.holdemAnteInput?.value || 1));
+      return Math.max(1, Math.min(999999999, v));
+    }
+
+    function makeHoldemDeck() {
+      const deck = [];
+      hiloRanks.forEach(r => hiloSuits.forEach(s => deck.push({ value: r.value, rank: r.rank, suit: s, text: `${r.rank}${s}`, red: s === "♥" || s === "♦" })));
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      return deck;
+    }
+
+    function holdemCardHtml(card, hidden = false) {
+      if (hidden) return `<div class="holdem-card hidden-card">?</div>`;
+      if (!card) return `<div class="holdem-card hidden-card">?</div>`;
+      return `<div class="holdem-card ${card.red ? "red" : ""}">${card.text}</div>`;
+    }
+
+    function renderHoldemCards() {
+      els.holdemPlayerCards.innerHTML = holdemPlayer.map(c => holdemCardHtml(c)).join("") || `${holdemCardHtml(null)}${holdemCardHtml(null)}`;
+      els.holdemDealerCards.innerHTML = holdemDealer.length
+        ? holdemDealer.map(c => holdemCardHtml(c, !holdemDealerShown)).join("")
+        : `${holdemCardHtml(null)}${holdemCardHtml(null)}`;
+      const slots = [];
+      for (let i = 0; i < 5; i++) slots.push(i < holdemRevealed ? holdemCardHtml(holdemBoard[i]) : holdemCardHtml(null));
+      els.holdemBoardCards.innerHTML = slots.join("");
+    }
+
+    function holdemHandScore(cards) {
+      const all = cards.slice().sort((a, b) => b.value - a.value);
+      const counts = new Map();
+      all.forEach(c => counts.set(c.value, (counts.get(c.value) || 0) + 1));
+      const values = [...counts.keys()].sort((a, b) => b - a);
+      const flushSuit = hiloSuits.find(s => all.filter(c => c.suit === s).length >= 5);
+      const uniqueAsc = [...new Set(all.map(c => c.value))].sort((a, b) => a - b);
+      let straightHigh = 0;
+      for (let i = 0; i <= uniqueAsc.length - 5; i++) {
+        const run = uniqueAsc.slice(i, i + 5);
+        if (run[4] - run[0] === 4 && new Set(run).size === 5) straightHigh = Math.max(straightHigh, run[4]);
+      }
+      let straightFlushHigh = 0;
+      if (flushSuit) {
+        const suited = all.filter(c => c.suit === flushSuit).map(c => c.value);
+        const suitedAsc = [...new Set(suited)].sort((a, b) => a - b);
+        for (let i = 0; i <= suitedAsc.length - 5; i++) {
+          const run = suitedAsc.slice(i, i + 5);
+          if (run[4] - run[0] === 4 && new Set(run).size === 5) straightFlushHigh = Math.max(straightFlushHigh, run[4]);
+        }
+      }
+      const byCount = [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0]);
+      const four = byCount.find(x => x[1] === 4);
+      const trips = byCount.filter(x => x[1] === 3).map(x => x[0]);
+      const pairs = byCount.filter(x => x[1] === 2).map(x => x[0]);
+      function kickers(exclude, n) { return values.filter(v => !exclude.includes(v)).slice(0, n); }
+      if (straightFlushHigh) return [8, straightFlushHigh];
+      if (four) return [7, four[0], ...kickers([four[0]], 1)];
+      if (trips.length && (pairs.length || trips.length > 1)) return [6, trips[0], trips.length > 1 ? trips[1] : pairs[0]];
+      if (flushSuit) return [5, ...all.filter(c => c.suit === flushSuit).map(c => c.value).slice(0, 5)];
+      if (straightHigh) return [4, straightHigh];
+      if (trips.length) return [3, trips[0], ...kickers([trips[0]], 2)];
+      if (pairs.length >= 2) return [2, pairs[0], pairs[1], ...kickers([pairs[0], pairs[1]], 1)];
+      if (pairs.length === 1) return [1, pairs[0], ...kickers([pairs[0]], 3)];
+      return [0, ...all.map(c => c.value).slice(0, 5)];
+    }
+
+    function compareHoldemHands(a, b) {
+      const aa = holdemHandScore(a);
+      const bb = holdemHandScore(b);
+      for (let i = 0; i < Math.max(aa.length, bb.length); i++) {
+        const x = aa[i] || 0, y = bb[i] || 0;
+        if (x > y) return 1;
+        if (x < y) return -1;
+      }
+      return 0;
+    }
+
+    function resetHoldemAfterDelay() {
+      setTimeout(() => {
+        holdemPot = 0;
+        holdemPlayerPaid = 0;
+        holdemDeck = [];
+        holdemPlayer = [];
+        holdemDealer = [];
+        holdemBoard = [];
+        holdemRevealed = 0;
+        holdemRunning = false;
+        holdemDealerShown = false;
+        els.holdemResultText.textContent = "Deal a hand. Dealer cards stay hidden until Show.";
+        renderHoldem();
+      }, 1700);
+    }
+
+    function showHoldemPop(title, amount, good = true) {
+      const pop = els.holdemCashPop || els.cashPop;
+      if (!pop) return;
+      pop.innerHTML = `
+        <div style="font-size:1.25rem;color:${good ? '#07101b' : '#ff5c8a'};">${title}</div>
+        <div style="font-size:1.9rem;color:${good ? '#07101b' : '#ff5c8a'};">${amount}</div>
+      `;
+      pop.classList.remove("hidden");
+      void pop.offsetWidth;
+      setTimeout(() => pop.classList.add("hidden"), 1700);
+    }
+
+    function renderHoldem() {
+      const ante = holdemRunning ? holdemAnte : getHoldemAnte();
+      if (els.holdemPutInput) els.holdemPutInput.max = String(ante);
+      els.holdemAnteStat.textContent = money(ante);
+      els.holdemPotStat.textContent = money(holdemPot);
+      els.holdemStreetStat.textContent = `${holdemRevealed} / 5`;
+      els.holdemMaxStat.textContent = money(ante);
+      els.holdemHelpText.textContent = `Max put in each card = ${money(ante)}.`;
+      renderHoldemCards();
+      const canReveal = holdemRunning && holdemRevealed < 5;
+      const canShow = holdemRunning && holdemRevealed >= 5 && !holdemDealerShown;
+      els.holdemCheckBtn.disabled = !canReveal;
+      els.holdemPutBtn.disabled = !canReveal;
+      els.holdemFoldBtn.disabled = !holdemRunning;
+      els.holdemShowBtn.disabled = !canShow;
+      els.holdemSideShowBtn.disabled = !canShow;
+      els.holdemStartBtn.disabled = holdemRunning;
+      els.holdemSideStartBtn.disabled = holdemRunning;
+    }
+
+    async function startHoldem() {
+      if (!currentUser) {
+        switchPage("account");
+        toast("You need to create an account or log in before playing.", true);
+        return;
+      }
+      if (holdemRunning) return;
+      holdemAnte = getHoldemAnte();
+      if (!chargeBet(holdemAnte)) return;
+      holdemPlayerPaid = holdemAnte;
+      holdemPot = holdemAnte * 2;
+      holdemDeck = makeHoldemDeck();
+      holdemPlayer = [holdemDeck.pop(), holdemDeck.pop()];
+      holdemDealer = [holdemDeck.pop(), holdemDeck.pop()];
+      holdemBoard = [holdemDeck.pop(), holdemDeck.pop(), holdemDeck.pop(), holdemDeck.pop(), holdemDeck.pop()];
+      holdemRevealed = 0;
+      holdemDealerShown = false;
+      holdemRunning = true;
+      if (els.holdemPutInput) els.holdemPutInput.value = String(holdemAnte);
+      els.holdemResultText.textContent = "Hand dealt. Check or put in to reveal the next board card.";
+      saveLocal();
+      renderTop();
+      renderHoldem();
+      playSound("click");
+      await saveCloud().catch(err => console.warn("Hold'em start save failed:", err));
+    }
+
+    async function holdemRevealNext(extraBet = 0) {
+      if (!holdemRunning || holdemRevealed >= 5) return;
+      const putIn = Math.max(0, Math.min(holdemAnte, Math.floor(Number(extraBet || 0))));
+      if (putIn > 0) {
+        if (!chargeBet(putIn)) return;
+        holdemPlayerPaid += putIn;
+        holdemPot += putIn * 2;
+      }
+      holdemRevealed += 1;
+      els.holdemResultText.textContent = holdemRevealed < 5
+        ? `Card ${holdemRevealed} shown. Check or put in for the next card.`
+        : "All board cards are out. Press Show to reveal dealer cards.";
+      saveLocal();
+      renderTop();
+      renderHoldem();
+      playSound("click");
+      await saveCloud().catch(err => console.warn("Hold'em card save failed:", err));
+    }
+
+    function checkHoldem() {
+      holdemRevealNext(0);
+    }
+
+    function putInHoldem() {
+      const raw = Math.floor(Number(els.holdemPutInput?.value || holdemAnte));
+      const amount = Math.max(1, Math.min(holdemAnte, raw));
+      if (els.holdemPutInput) els.holdemPutInput.value = String(amount);
+      holdemRevealNext(amount);
+    }
+
+    async function showHoldem() {
+      if (!holdemRunning || holdemRevealed < 5) return;
+      holdemDealerShown = true;
+      const cmp = compareHoldemHands([...holdemPlayer, ...holdemBoard], [...holdemDealer, ...holdemBoard]);
+      holdemRunning = false;
+      if (cmp > 0) {
+        const win = Math.floor(holdemPot * Number(state.rebirthMultiplier || 1));
+        state.balance = Number(state.balance || 0) + win;
+        state.bestRun = Math.max(Number(state.bestRun || 0), win);
+        els.holdemResultText.textContent = `You win the pot: ${money(win)}.`;
+        showHoldemPop("HOLD'EM WIN!", `+${money(win)}`, true);
+        launchConfetti();
+        playSound("cashout");
+        try {
+          await addDoc(collection(db, "cashLeaderboard"), {
+            username: emailName(state.email || currentUser?.email || ""),
+            displayName: emailName(state.email || currentUser?.email || ""),
+            email: state.email || currentUser?.email || "",
+            game: "Hold'em Duel",
+            cash: win,
+            createdAt: serverTimestamp()
+          });
+        } catch (e) { console.error("Hold'em run history save failed:", e); }
+      } else if (cmp === 0) {
+        state.balance = Number(state.balance || 0) + holdemPlayerPaid;
+        els.holdemResultText.textContent = "Push. Your money is refunded.";
+        showHoldemPop("PUSH", "Bet refunded", true);
+        playSound("click");
+      } else {
+        els.holdemResultText.textContent = `Dealer wins. You lost ${money(holdemPlayerPaid)}.`;
+        showHoldemPop("HOLD'EM LOST", `-${money(holdemPlayerPaid)}`, false);
+        playSound("crash");
+      }
+      saveLocal();
+      renderTop();
+      renderHoldem();
+      await saveCloud().catch(err => console.warn("Hold'em result save failed:", err));
+      publishLeaderboardProfileInBackground();
+      resetHoldemAfterDelay();
+    }
+
+    async function foldHoldem() {
+      if (!holdemRunning) return;
+      holdemRunning = false;
+      holdemDealerShown = true;
+      els.holdemResultText.textContent = `Folded. You lost ${money(holdemPlayerPaid)}.`;
+      showHoldemPop("FOLDED", `-${money(holdemPlayerPaid)}`, false);
+      playSound("crash");
+      saveLocal();
+      renderTop();
+      renderHoldem();
+      await saveCloud().catch(err => console.warn("Hold'em fold save failed:", err));
+      resetHoldemAfterDelay();
+    }
 
     function getHighCardBet() {
       const v = Math.floor(Number(els.hcBetInput.value || 1));
@@ -4845,6 +5235,21 @@ function showTwentyOneCashPop(amount) {
  els.cpCashoutBtn.addEventListener("click", cashoutCrossPath);
  els.cpSideCashoutBtn.addEventListener("click", cashoutCrossPath);
  els.cpBetInput.addEventListener("input", renderCrossPath);
+    els.holdemStartBtn.addEventListener("click", startHoldem);
+    els.holdemSideStartBtn.addEventListener("click", startHoldem);
+    els.holdemCheckBtn.addEventListener("click", checkHoldem);
+    els.holdemPutBtn.addEventListener("click", putInHoldem);
+    els.holdemShowBtn.addEventListener("click", showHoldem);
+    els.holdemSideShowBtn.addEventListener("click", showHoldem);
+    els.holdemFoldBtn.addEventListener("click", foldHoldem);
+    els.holdemAnteInput.addEventListener("input", renderHoldem);
+    els.holdemPutInput.addEventListener("input", () => {
+      const max = holdemRunning ? holdemAnte : getHoldemAnte();
+      const raw = Math.floor(Number(els.holdemPutInput.value || 1));
+      els.holdemPutInput.value = String(Math.max(1, Math.min(max, raw)));
+      renderHoldem();
+    });
+
  els.hcStartBtn.addEventListener("click", playHighCard);
  els.hcSideStartBtn.addEventListener("click", playHighCard);
 if (els.hcShowBtn) els.hcShowBtn.addEventListener("click", showHighCard);
